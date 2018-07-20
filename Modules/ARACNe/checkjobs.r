@@ -24,7 +24,7 @@ if (length(tmp)>0) {
         system(paste("echo \"", command, "\" | qsub -l mem=20G,time=1:: -pe smp 4 -N ar_", acro, "-", reg, " -j yes -o ", qlog, " -cwd", sep=""))
     }
     qlog <- paste(wd, "/chk_", acro, "-", reg, ".log", sep="")
-    command <- paste(rscript, " checkjobs.r", wd, acro, reg, rfn, sep=" ")
+    command <- paste(rscript, " ", ad, "checkjobs.r ", wd, " ", acro, " ", reg, " ", rfn, sep="")
     system(paste("echo \"", command, "\" | qsub -l mem=1G,time=1:: -N chk_", acro, "-", reg, " -j yes -o ", qlog, " -cwd -hold_jid ar_", acro, "-", reg, sep=""))
 }
 #re-submit aborted bootstraps

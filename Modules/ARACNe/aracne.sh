@@ -12,7 +12,7 @@ rfn=$5
 
 ##### Pre-defined values
 bst=200
-adir="/ifs/scratch/c2b2/ac_lab/CZI/Pipeline/Modules/ARACNe/"
+adir="/ifs/scratch/c2b2/ac_lab/CZI/single-cell-pipeline/Modules/ARACNe/"
 rscript="/nfs/apps/R/3.3.1/bin/Rscript --vanilla"
 java="/nfs/apps/java/1.7.0_25/bin/java"
 

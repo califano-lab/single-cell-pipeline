@@ -12,6 +12,7 @@ message(paste("N=", n, sep = ""))
 if (n > ncol(expmat)){
     message("Using the whole dataset")
 }else message(paste("Sub-sample", n, "samples with set.seed", n))
+message(paste("Minimum expression rate=", r, sep = ""))
 set.seed(n)
 expmat <- expmat[, sample(1:ncol(expmat), min(n, ncol(expmat)), replace = F)]
 expmat <- expmat[rowSums(expmat > 0) >= r*ncol(expmat), ]

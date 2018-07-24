@@ -15,7 +15,7 @@ tmp <- sapply(fn, function(x) {
     tmp <- readLines(x)
     tmp[length(tmp)]
 })
-names(tmp) <- sapply(strsplit(fn, "_"), function(x) sub(".log", "", x[3]))
+names(tmp) <- sapply(strsplit(fn, "_"), function(x) sub(".log", "", x[length(x)]))
 tmp <- as.numeric(names(tmp))[-grep("Total time elapsed", tmp)]
 if (length(tmp)>0) {
     for (i in tmp) {

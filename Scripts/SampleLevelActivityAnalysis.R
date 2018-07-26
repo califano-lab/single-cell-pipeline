@@ -46,8 +46,8 @@ message(annoFile)
 
 setwd(workDir)
 library(viper)
-source("/ifs/scratch/c2b2/ac_lab/CZI/Pipeline/Modules/metaVIPER/metaVIPER.R")
-source("/ifs/scratch/c2b2/ac_lab/CZI/Pipeline/Modules/ColorGradient/ColorGradient.R")
+source("/ifs/scratch/c2b2/ac_lab/CZI/single-cell-pipeline/Modules/metaVIPER/metaVIPER.R")
+source("/ifs/scratch/c2b2/ac_lab/CZI/single-cell-pipeline/Modules/ColorGradient/ColorGradient.R")
 
 gene <- unique(unlist(lapply(sampleFiles, function(f){
     exp <- get(load(f))
@@ -58,7 +58,7 @@ exp <- lapply(sampleFiles, function(f, gene){
     exp <- get(load(f))
     f <- sapply(strsplit(f, split = "/"), function(x) x[length(x)])
     f <- unlist(strsplit(f, split = "_cpm.rda"))
-    t <- matrix(0, nrow(exp), ncol(exp), dimnames = list(gene, paste(f, 1:ncol(exp), sep = "_")))
+    t <- matrix(0, length(gene), ncol(exp), dimnames = list(gene, paste(f, 1:ncol(exp), sep = "_")))
     t[rownames(exp), ] <- exp
     t
 }, gene=sort(gene, decreasing = T))

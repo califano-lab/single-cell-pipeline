@@ -73,6 +73,8 @@ legend("topright", legend = paste(levels(as.factor(sapply(strsplit(rownames(mds_
        fill = cat, bty = "n", border = NA)
 plot(density(colSums(exp > 0)), main = "# Genes")
 plot(mds_pca_exp, xlab = "MDS-1", ylab = "MDS-2", col = geneColor(exp), cex = 0.5, pch = 16, main = "# Genes")
+legend("bottomleft", legend = paste("#Genes=", range(colSums(exp > 0)), sep = ""),
+       fill = c("Grey", "Red"), bty = "n", border = NA)
 barplot(signif(pca_exp$sdev[1:10]^2/sum(pca_exp$sdev^2)*100, 2), xlab = "PC", ylab = "%Variance", main = "")
 for (i in 2:5){
     plot(pca_exp$x[, 1], pca_exp$x[, i], col = cat[as.factor(sapply(strsplit(rownames(mds_pca_exp), split = "_"), function(x) x[1]))],
@@ -101,8 +103,12 @@ if (!is.na(annoFile)){
     for (i in 1:nrow(anno)){
         plot(mds_pca_exp, xlab = "MDS-1", ylab = "MDS-2", cex = 0.5, pch = 16,
              col = expColor(anno[i, 2], exp, c("Black", "Red")), main = paste(anno[i, 1], anno[i, 2]))
-        legend("bottomleft", legend = paste("exp=", signif(range(exp[anno[i, 1], ]), 2), sep = ""),
-               fill = c("Black", "Red"), bty = "n", border = NA)
+        if (anno[i, 2] %in% rownames(exp)){
+            legend("bottomleft", legend = paste("exp=", signif(range(exp[anno[i, 2], ]), 2), sep = ""),
+                   fill = c("Black", "Red"), bty = "n", border = NA)
+        }else{
+            legend("bottomleft", legend = paste(anno[i, 2], "not detected"), bty = "n", border = NA)
+        }
     }
     dev.off()
     #figure

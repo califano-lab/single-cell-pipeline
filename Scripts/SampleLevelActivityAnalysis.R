@@ -91,6 +91,8 @@ legend("topright", legend = paste(levels(as.factor(sapply(strsplit(rownames(mds_
        fill = cat, bty = "n", border = NA)
 plot(density(colSums(exp > 0)), main = "# Genes")
 plot(mds_vp, xlab = "MDS-1", ylab = "MDS-2", col = geneColor(exp), cex = 0.5, pch = 16, main = "# Genes")
+legend("bottomleft", legend = paste("#Genes=", range(colSums(exp > 0)), sep = ""),
+       fill = c("Grey", "Red"), bty = "n", border = NA)
 barplot(signif(pca_vp$sdev[1:10]^2/sum(pca_vp$sdev^2)*100, 2), xlab = "PC", ylab = "%Variance", main = "")
 for (i in 2:5){
     plot(pca_vp$x[, 1], pca_vp$x[, i], col = cat[as.factor(sapply(strsplit(rownames(mds_vp), split = "_"), function(x) x[1]))],
@@ -118,11 +120,19 @@ if (!is.na(annoFile)){
     for (i in 1:nrow(anno)){
         plot(mds_vp, xlab = "MDS-1", ylab = "MDS-2", cex = 0.5, pch = 16,
              col = expColor(anno[i, 2], exp, c("Black", "Red")), main = paste("Exp.", anno[i, 1], anno[i, 2]))
-        legend("bottomleft", legend = paste("exp=", signif(range(exp[anno[i, 1], ]), 2), sep = ""),
-               fill = c("Black", "Red"), bty = "n", border = NA)
+        if (anno[i, 2] %in% rownames(exp)){
+            legend("bottomleft", legend = paste("exp=", signif(range(exp[anno[i, 2], ]), 2), sep = ""),
+                   fill = c("Black", "Red"), bty = "n", border = NA)
+        }else{
+            legend("bottomleft", legend = paste(anno[i, 2], "not detected"), bty = "n", border = NA)
+        }
         plot(mds_vp, xlab = "MDS-1", ylab = "MDS-2", cex = 0.5, pch = 16,
              col = vpColor(anno[i, 2], vp), main = paste("Act.", anno[i, 1], anno[i, 2]))
-        legend("bottomleft", legend = c("Act.<-5", "Act.=0", "Act.>5"), fill = c("Blue", "Grey", "Red"), bty = "n", border = NA)
+        if (anno[i, 2] %in% rownames(vp)){
+            legend("bottomleft", legend = c("Act.<-5", "Act.=0", "Act.>5"), fill = c("Blue", "Grey", "Red"), bty = "n", border = NA)
+        }else{
+            legend("bottomleft", legend = paste(anno[i, 2], "not detected"), bty = "n", border = NA)
+        }
     }
     dev.off()
     #figure

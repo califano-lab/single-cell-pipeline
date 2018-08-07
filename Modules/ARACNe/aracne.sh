@@ -17,8 +17,8 @@ rscript="/nfs/apps/R/3.3.1/bin/Rscript --vanilla"
 java="/nfs/apps/java/1.7.0_25/bin/java"
 
 ##### Expression file preparation
-command="$rscript $adir/expmat.r ${wdir} ${ifn} ${acro} 0.1 10000"
-echo $command | qsub -l mem=10G,time=1:: -N dat_${acro}-${reg} -j yes -cwd -o ${wdir}/dat_${acro}-${reg}.log
+command="$rscript $adir/expmat.r ${wdir} ${ifn} ${acro} 0.1 30000"
+echo $command | qsub -l mem=32G,time=1:: -N dat_${acro}-${reg} -j yes -cwd -o ${wdir}/dat_${acro}-${reg}.log
 
 ##### Threshold
 command="$java -Xmx16000M -jar $adir/aracne.jar -e ${wdir}/${acro}-expmat.dat -o ${wdir}/${acro}-${reg}/ --tfs ${rfn} --pvalue 0.00000001 --seed 1 --calculateThreshold"

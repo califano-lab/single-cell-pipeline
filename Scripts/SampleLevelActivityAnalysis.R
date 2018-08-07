@@ -70,7 +70,7 @@ rank <- (rank - median)/mad
 regulon <- lapply(netFiles, function(f){
     message(f)
     regul <- get(load(f))
-    regul
+    pruneRegulon(regul)
 })
 vp <- metaVIPER(eset = rank, regulon = regulon, weight = "mean", method = "none")
 save(vp, file = paste(jobName, "_vp.rda", sep = ""))

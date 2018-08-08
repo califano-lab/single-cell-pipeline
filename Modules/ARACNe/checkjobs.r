@@ -3,12 +3,10 @@ wd <- args[1]#working directory
 acro <- args[2]#acronym
 reg <- args[3]#regulator name
 rfn <- args[4]#regulator file
+ad <- args[5]#aracne directory
+rscript <- args[6]#rscript
+java <- args[7]#java
 #arguments
-
-ad <- "/ifs/scratch/c2b2/ac_lab/CZI/single-cell-pipeline/Modules/ARACNe/"
-rscript="/nfs/apps/R/3.3.1/bin/Rscript --vanilla"
-java="/nfs/apps/java/1.7.0_25/bin/java"
-#pre-defined values
 
 fn <- list.files(pattern=paste("ar_", acro, "-", reg, sep=""))
 tmp <- sapply(fn, function(x) {

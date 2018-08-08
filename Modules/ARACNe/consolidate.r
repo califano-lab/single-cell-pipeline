@@ -4,9 +4,16 @@ expfn <- args[2]#expression file
 regfn <- args[3]#regulators
 mht <- args[4]#correction (none, bonferroni, fdr)
 alpha <- as.numeric(args[5])#p-value
+bst <- as.numeric(args[6])#number of bootstraps
 #arguments
 
+message(paste("Total number of bootstraps:", bst))
 fn <- list.files(path = wd, pattern = "bootstrapNetwork", full.names = T)
+while (length(fn) < bst){
+    message(paste("Number of bootstraps finished:", length(fn)))
+    Sys.sleep((30))
+    fn <- list.files(path = wd, pattern = "bootstrapNetwork", full.names = T)
+}
 res <- resmi <- edges <- NULL
 for (fn1 in fn) {
     message(fn1)

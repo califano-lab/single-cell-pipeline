@@ -13,7 +13,7 @@ rfn=$5
 ##### Pre-defined values
 bst=200
 adir="/ifs/scratch/c2b2/ac_lab/CZI/single-cell-pipeline/Modules/ARACNe/"
-rscript="/nfs/apps/R/3.3.1/bin/Rscript --vanilla"
+rscript="/nfs/apps/R/3.3.1/bin/Rscript"
 java="/nfs/apps/java/1.7.0_25/bin/java"
 
 ##### Expression file preparation
@@ -42,13 +42,12 @@ done
 command="$rscript $adir/checkjobs.r ${wdir} ${acro} ${reg} ${rfn} $adir $rscript $java"
 echo $command | qsub -l mem=1G,time=1:: -N chk_${acro}-${reg} -j yes -o ${wdir}/chk_${acro}-${reg}.log -cwd -hold_jid ar_${acro}-${reg}
 
-##### Consolidate  
-command="$rscript $adir/consolidate.r ${wdir}/${acro}-${reg} ${wdir}/${acro}-expmat.dat ${rfn} none 0.0001"
-echo $command | qsub -l mem=32G,time=4:: -N net_${acro}-${reg} -j yes -o ${wdir}/net_${acro}-${reg}.log -cwd -hold_jid chk_${acro}-${reg}
+##### Consolidate
+command="$rscript $adir/consolidate.r ${wdir}/${acro}-${reg} ${wdir}/${acro}-expmat.dat ${rfn} none 0.0001 $bst"
+echo $command | qsub -l mem=32G,time=4:: -N net_${acro}-${reg} -j yes -o ${wdir}/net_${acro}-${reg}.log -cwd -hold_jid ar_${acro}-${reg}
 
-####### Clean-up
+##### Clean-up
 command="cp ${wdir}/${acro}-${reg}/finalNetwork_4col.tsv ${wdir}/${acro}-${reg}_4col.tsv\n
 cp ${wdir}/${acro}-${reg}_all/network.txt ${wdir}/${acro}-${reg}-network.tsv\n
 $rscript $adir/regulon.r ${wdir} ${acro} ${reg} ${wdir}/${acro}-${reg}-regulon.rda"
 echo -e $command | qsub -l mem=20G,time=8:: -N cl_${acro}-${reg} -j yes -o ${wdir}/cl_${acro}-${reg}.log -cwd -hold_jid net_${acro}-${reg}
-

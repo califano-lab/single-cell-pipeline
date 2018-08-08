@@ -21,7 +21,7 @@ if (length(tmp)>0) {
     for (i in tmp) {
         qlog <- paste(wd, "/ar_", acro, "-", reg, "_", i, ".log", sep="")
         command <- paste(java, " -Xmx16000M -jar ", ad, "/aracne.jar", " -e ./", acro, "-expmat.dat -o ./", acro, "-", reg, "/ --tfs ", rfn, " --pvalue 0.00000001 --threads 4 --seed ", i, sep="")
-        system(paste("echo \"", command, "\" | qsub -l mem=20G,time=1:: -pe smp 4 -N ar_", acro, "-", reg, " -j yes -o ", qlog, " -cwd", sep=""))
+        system(paste("echo \"", command, "\" | qsub -l mem=20G,time=1:: -N ar_", acro, "-", reg, " -j yes -o ", qlog, " -cwd", sep=""))
     }
     qlog <- paste(wd, "/chk_", acro, "-", reg, ".log", sep="")
     command <- paste(rscript, " ", ad, "checkjobs.r ", wd, " ", acro, " ", reg, " ", rfn, sep="")

@@ -7,11 +7,19 @@ alpha <- as.numeric(args[5])#p-value
 bst <- as.numeric(args[6])#number of bootstraps
 #arguments
 
+fn <- list.files(path = paste(wd, "_all", sep = ""), pattern = "network.txt", full.names = T)
+while (length(fn) == 0){
+    message("Running no-bootstrap no-dpi network...")
+    Sys.sleep(300)
+    fn <- list.files(path = paste(wd, "_all", sep = ""), pattern = "network.txt", full.names = T)
+}
+message("No-bootstrap no-dpi network finished!")
+message("\n")
 message(paste("Total number of bootstraps:", bst))
 fn <- list.files(path = wd, pattern = "bootstrapNetwork", full.names = T)
 while (length(fn) < bst){
     message(paste("Number of bootstraps finished:", length(fn)))
-    Sys.sleep((30))
+    Sys.sleep(30)
     fn <- list.files(path = wd, pattern = "bootstrapNetwork", full.names = T)
 }
 res <- resmi <- edges <- NULL

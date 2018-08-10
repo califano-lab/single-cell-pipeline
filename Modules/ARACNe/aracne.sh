@@ -29,8 +29,8 @@ command="mkdir ${wdir}/${acro}-${reg}_all\n
 cp ${wdir}/${acro}-${reg}/miThreshold*.txt ${wdir}/${acro}-${reg}_all/\n
 rename p1E-8 p1E0 ${wdir}/${acro}-${reg}_all/miThreshold*.txt\n
 echo "0" > ${wdir}/${acro}-${reg}_all/miThreshold*.txt\n
-$java -Xmx16000M -jar $adir/aracne.jar -e ${wdir}/${acro}-expmat.dat -o ${wdir}/${acro}-${reg}_all/ --tfs ${rfn} --pvalue 1 --threads 4 --nodpi --nobootstrap"
-echo -e $command | qsub -l mem=20G,time=1:: -N ar_${acro}-${reg} -j yes -o ${wdir}/ar_${acro}-${reg}_all.log -cwd -hold_jid thr_${acro}-${reg}
+$java -Xmx36000M -jar $adir/aracne.jar -e ${wdir}/${acro}-expmat.dat -o ${wdir}/${acro}-${reg}_all/ --tfs ${rfn} --pvalue 1 --threads 4 --nodpi --nobootstrap"
+echo -e $command | qsub -l mem=40G,time=2:: -N ar_${acro}-${reg} -j yes -o ${wdir}/ar_${acro}-${reg}_all.log -cwd -hold_jid thr_${acro}-${reg}
 
 ##### Run bootstraps
 for i in $(seq 1 $bst); do

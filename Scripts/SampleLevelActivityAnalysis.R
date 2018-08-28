@@ -119,19 +119,19 @@ if (!is.na(annoFile)){
     par(mfrow = c(floor(2*nrow(anno)/4)+1, 4))
     for (i in 1:nrow(anno)){
         plot(mds_vp, xlab = "MDS-1", ylab = "MDS-2", cex = 0.5, pch = 16,
-             col = expColor(anno[i, 2], exp, c("Black", "Red")), main = paste("Exp.", anno[i, 1], anno[i, 2]))
+             col = expColor(as.character(anno[i, 2]), exp, c("Black", "Red")), main = paste("Exp.", anno[i, 1], anno[i, 2]))
         if (anno[i, 2] %in% rownames(exp)){
-            legend("bottomleft", legend = paste("exp=", signif(range(exp[anno[i, 2], ]), 2), sep = ""),
+            legend("bottomleft", legend = paste("exp=", signif(range(exp[as.character(anno[i, 2]), ]), 2), sep = ""),
                    fill = c("Black", "Red"), bty = "n", border = NA)
         }else{
-            legend("bottomleft", legend = paste(anno[i, 2], "not detected"), bty = "n", border = NA)
+            legend("bottomleft", legend = paste(as.character(anno[i, 2]), "not detected"), bty = "n", border = NA)
         }
         plot(mds_vp, xlab = "MDS-1", ylab = "MDS-2", cex = 0.5, pch = 16,
-             col = vpColor(anno[i, 2], vp), main = paste("Act.", anno[i, 1], anno[i, 2]))
+             col = vpColor(as.character(anno[i, 2]), vp), main = paste("Act.", as.character(anno[i, 1]), as.character(anno[i, 2])))
         if (anno[i, 2] %in% rownames(vp)){
             legend("bottomleft", legend = c("Act.<-5", "Act.=0", "Act.>5"), fill = c("Blue", "Grey", "Red"), bty = "n", border = NA)
         }else{
-            legend("bottomleft", legend = paste(anno[i, 2], "not detected"), bty = "n", border = NA)
+            legend("bottomleft", legend = paste(as.character(anno[i, 2]), "not detected"), bty = "n", border = NA)
         }
     }
     dev.off()

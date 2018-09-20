@@ -1,13 +1,14 @@
 
+## A single cell pipeline for the identification of cell type-specific master regulators
 
-# Paths for the HPC for datasets
+Paths for the HPC for datasets
 * Datasets: 
   * ```/ifs/scratch/c2b2/ac_lab/CZI/peter_data```
   
 * ARACNe repository: 
   * ```/ifs/scratch/c2b2/ac_lab/CZI/aracne-repository```
 
-# Example DONOR1 (Lung)
+## Example: DONOR1 (Lung))
 
 ````
 rm(list=ls(all=T))
@@ -130,7 +131,50 @@ dim(unique(expmat))
 save(expmat,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/expression4ARACNe.rda")
 ````
 
+# Generate ARACNe network
+````
+#Please visit  the ARACNe repository before to run ARACNe
+sh ARACNe_p.sh
+````
 
+## Virtual inference of protein activity by Viper
+````
+library(viper)
+source("R/ComplementaryFunctions.r")
+load("R/desc.rda")
+
+# Create the regulon
+net_path<-file.path("~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/LUNG_DONOR1-tf-network.tsv")
+regul_LUNG_DONOR1<-aracne2regulon(net_path,expmat,format = "3col")
+
+#save(regul_LUNG_DONOR1,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/regul_LUNG_DONOR.rda")
+merged.cpm_unique<-unique(merged.cpm)
+
+rownames(merged.cpm_unique)<-substr(rownames(merged.cpm_unique),1,15)
+
+# Infer  protein activity 
+pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale")
+````
+Perform PCA based on protein activity
+````
+pca_pa<-prcomp(t(pa_D1_lung))
+autoplot(pca_pa)
+````
+
+Select optimal number of clusters
+````
+sil_score<-NULL
+
+for (i in 2:6)
+{
+   sil_score<-c(sil_score,pam(as.dist(viperSimilarity(pa_D1_lung)), i)$silinfo$avg.width)
+  }
+plot(c(2:5),sil_score,type = "b")  
+````
+````
+## the optimal number of cluster is 3
+pam_cl<-pam(as.dist(viperSimilarity(pa_D1_lung)), 3)
+````
 
 
 

@@ -137,7 +137,7 @@ save(expmat,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/expression4ARACNe
 sh ARACNe_p.sh
 ````
 
-## Virtual inference of protein activity by Viper
+## Virtual inference of protein activity  analysis by Viper
 ````
 library(viper)
 source("R/ComplementaryFunctions.r")
@@ -161,7 +161,7 @@ pca_pa<-prcomp(t(pa_D1_lung))
 autoplot(pca_pa)
 ````
 
-Select optimal number of clusters
+Define the optimal number of clusters
 ````
 sil_score<-NULL
 
@@ -175,7 +175,7 @@ plot(c(2:5),sil_score,type = "b")
 ## the optimal number of cluster is 3
 pam_cl<-pam(as.dist(viperSimilarity(pa_D1_lung)), 3)
 ````
-
+ 
 
 
 

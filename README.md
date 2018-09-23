@@ -175,7 +175,7 @@ plot(c(2:5),sil_score,type = "b")
 ## the optimal number of cluster is 3
 pam_cl<-pam(as.dist(viperSimilarity(pa_D1_lung)), 3)
 ````
- 
+Associate MRs to each cluster
 
 
 

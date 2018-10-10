@@ -11,7 +11,7 @@ Surface Proteins (manually curated, not overlapping with Transcriptional Factors
 GO:0005886, “plasma membrane”
 
 October 10 2018
-Ajay removed the following genes from TF and coTF lists for mouse symbols because they are ribosomal genes and not know to have any transcriptional regulatory function.
+Ajay removed the following genes from TF and coTF 'symbol' lists for mouse symbols because they are ribosomal genes and not know to have any transcriptional regulatory function. 
 TFs:
 Rpl7
 Mrpl28
@@ -24,3 +24,5 @@ Rps3
 Rps6ka4
 Rps6ka5
 Mrpl12
+
+The corresponding mouse TF and coTF gene-symbol-files have been changed. The gene-id-files have not been updated.

@@ -1,11 +1,28 @@
 Transcriptional Factors:
-GO:0003700, ìtranscription factor activityî
-GO:0003677, ìDNA bindingî
-GO:0030528, ìtranscription regulator activityî
-GO:00034677 and GO:0045449, ìregulation of transcriptionî
+GO:0003700, ‚Äútranscription factor activity‚Äù
+GO:0003677, ‚ÄúDNA binding‚Äù
+GO:0030528, ‚Äútranscription regulator activity‚Äù
+GO:00034677 and GO:0045449, ‚Äúregulation of transcription‚Äù
 
 Transcriptional Co-Factors (manually curated, not overlapping with Transcriptional Factors list):
-GO:0003712, GO:0030528 or GO:0045449, ìtranscription cofactor activityî
+GO:0003712, GO:0030528 or GO:0045449, ‚Äútranscription cofactor activity‚Äù
 
 Surface Proteins (manually curated, not overlapping with Transcriptional Factors/Co-Factors list):
-GO:0005886, ìplasma membraneî
+GO:0005886, ‚Äúplasma membrane‚Äù
+
+October 10 2018
+Ajay removed the following genes from TF and coTF 'symbol' lists for mouse symbols because they are ribosomal genes and not know to have any transcriptional regulatory function. 
+TFs:
+Rpl7
+Mrpl28
+
+coTFs:
+Rpl6
+Rpl7l1
+Rps14
+Rps3
+Rps6ka4
+Rps6ka5
+Mrpl12
+
+The corresponding mouse TF and coTF gene-symbol-files have been changed. The gene-id-files have not been updated.

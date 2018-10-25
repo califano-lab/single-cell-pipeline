@@ -21,121 +21,142 @@ library(ggfortify)
 Load "resting T cells" matrix
 
 ````
-rest_T<-read.table("~/PP001swap.filtered.matrix.txt.bz2",sep="\t")
+rest_T<-fread("~/PP001swap.filtered.matrix.txt.bz2",sep="\t",colClasses = "numeric"))
+rest_T<-as.data.frame(rest_T)
+class(rest_T[2,3])
 ensemble_id<-rest_T[,1]
+colnames(rest_T)<-paste("PP001",seq(1:length(colnames(rest_T))),sep=".")
 dim(rest_T)
 str(rest_T)
 head(rest_T[,1:4])
 rest_T<-rest_T[,-c(1,2)]
 rownames(rest_T)<-ensemble_id
-colnames(rest_T)<-rep("PP001",length(colnames(rest_T)))
 head(rest_T[,1:4])
+annot_rest<-rep("PP001",length(colnames(rest_T)))
+
 ````
 Load  "activated T cells" matrix
 
 ````
-act_T<-read.table("~/ac_lab_scratch/CZI/peter_data/PP002swap.filtered.matrix.txt.bz2",sep="\t")
+act_T<-fread("~/PP002swap.filtered.matrix.txt.bz2",sep="\t",colClasses = "numeric")
+act_T<-as.data.frame(act_T)
 dim(act_T)
 str(act_T)
 ensemble_id<-act_T[,1]
+colnames(act_T)<-paste("PP002",seq(1:length(colnames(act_T))),sep=".")
 act_T<-act_T[,-c(1,2)]
 rownames(act_T)<-ensemble_id
 head(act_T[,1:4])
-colnames(act_T)<-rep("PP002",length(colnames(act_T)))
-head(act_T[,1:4])
+annot_act_T<-rep("PP002",length(colnames(act_T)))
+dim(act_T)
+length(annot_act_T)
+
 ````
 Merge the two data sets
 
 ````
 gene.in.common <- intersect( rownames(rest_T) , rownames(act_T) ) ; length(gene.in.common)
-merged_raw_counts <- cbind( rest_T[gene.in.common,] , act_T[gene.in.common,] )
+merged_raw_counts <- cbind(rest_T[gene.in.common,] , act_T[gene.in.common,] )
+merged_raw_counts<-data.matrix(merged_raw_counts)
 dim(merged_raw_counts)
 str(merged_raw_counts)
 ````
+Check the matrix
 
+````
+str(merged_raw_counts)
+dim(merged_raw_counts)
+class(merged_raw_counts)
+head(merged_raw_counts[,1:3])
+````
+Quality controls
+
+````
+pdf("Quality_Control.pdf",onefile = F) 
+par(mfrow=c(1,3))
+boxplot(colSums(merged_raw_counts), main = "Sequencing depth",frame.plot=F,col="orange")
+boxplot(colSums(merged_raw_counts > 0), main = "Detected genes",frame.plot=F,col="cyan")
+smoothScatter(colSums(merged_raw_counts), colSums(merged_raw_counts > 0), main = "Saturation plot",frame.plot=FALSE,ylab = "Detected genes",xlab = "Sequencing depth",cex = 2,postPlotHook=NULL)
+dev.off()
+
+````
 
 Filter for  low quality cells
+
 ````
 merged_raw_counts.filtered <- merged_raw_counts[ , colSums(merged_raw_counts) > 1000 & colSums(merged_raw_counts) < 100000 ]
+````
+Check matrix
+
+````
 dim(merged_raw_counts.filtered)
 str(merged_raw_counts.filtered)
+class(merged_raw_counts.filtered)
+head(merged_raw_counts.filtered[,1:3])
 ````
 
 Filter for not expressed genes
 ````
-merged_raw_counts.filtered <- merged_raw_counts.filtered[ rowSums(merged_raw_counts.filtered) != 0 , ]
-str(merged_raw_counts.filtered)
+merged_raw_counts.filtered <- merged_raw_counts.filtered[ rowSums(merged_raw_counts.filtered,na.rm =T )> 0 , ]
+````
+Check matrix
+
+````
 dim(merged_raw_counts.filtered)
+str(merged_raw_counts.filtered)
+class(merged_raw_counts.filtered)
+head(merged_raw_counts.filtered[,1:3])
+````
+
+# Perepare data for clustering analysis ( SCANPY pipeline in python)
+````
+merged_raw_counts.filtered_2<-merged_raw_counts.filtered
+rownames(merged_raw_counts.filtered_2)<-substr(rownames(merged_raw_counts.filtered_2),1,15)
 ````
 # Normalize to cpm
-merged.cpm <- log2(t(t(merged_raw_counts.filtered)/(colSums(merged_raw_counts.filtered)/1e6)) + 1)
-
-# Clustering analysis
-
-Select top 500 variant genes
 ````
-var_filt<-apply(merged.cpm,1, var)
-var_filt_genes <- names(sort(var_filt,decreasing = T)[1:500])
-cpm_var<-merged.cpm[var_filt_genes,]
+merged.cpm <- log2(t(t(merged_raw_counts.filtered_2)/(colSums(merged_raw_counts.filtered_2)/1e6)) + 1)
 ````
 
-Define optimal number of clusters based on silhouette score
+Check matrix
+
 ````
-sil_score_ge<-NULL
-
-#create dissimilarity matrix
-diss_m<-as.matrix(1-cor(cpm_var))
-
-for (i in 2:6)
-{
-  sil_score_ge<-c(sil_score_ge,pam(diss_m,i)$silinfo$avg.width)
-}
-# Plot the the silhouette score values and identify the optimal number of cluster
-plot(c(2:6),sil_score_ge,type = "b")  
-# The optimal number of cluster is 2, however these two clusters are weak
-clusters_k2<-pam(diss_m,2)
+dim(merged_raw_counts.filtered_2)
+str(merged_raw_counts.filtered_2)
+class(merged_raw_counts.filtered_2)
+head(merged_raw_counts.filtered_2[,1:3])
 ````
-# Principal component analysis
+# Generate annotation files
 ````
-pca<-prcomp(t(cpm_var))
-
-#Plot the PCA 
-autoplot(pca)
+annotation_D1_Lung<-substr(colnames(merged_raw_counts.filtered_2),1,5)
 ````
-# Select cells from each cluster and prepare data for network analysis
-Ideally, we want to generate an ARACNe network  for each cluster by randolmly selecting "n" cells (e.g. n=1000) from each cluster. 
+# Save the files for downstream analyses
 ````
-names_cells<-c(sample(names(clusters_k2$clustering)[grep("1",clusters_k2$clustering)],1000),sample(names(clusters_k2$clustering)[grep("2",clusters_k2$clustering)],1000))
-
-# Alternatively, in case the clusters are not robust (not significant), we can randomly select cells from the entire matrix
-# NOT RUN
-#names_cells<-sample(colnames(cpm_var), 1000)
-
-# check how many cells are activated T cells and how many are  resting T cells 
-
-length(grep("PP001", names_cells)) # n=478
-length(grep("PP002", names_cells)) #n=522
+write.table(merged_raw_counts.filtered_2,"~/merged_raw_counts.filtered.donor1.txt",sep="\t")
+write.table(merged.cpm,"~/Normalized_merged_counts.filtered.donor1.txt",sep="\t")
+write.table(as.vector(annotation_D1_Lung),"~/annotation_D1_Lung.txt",sep="\t",row.names = F,quote=F,col.names = F)
+````
+#### APPLY LOUVEIN CLUSTERING ALGORITHM (FROM SCANPY pipeline) ####
+````
+command<- "python3.6"
+path2script='~/Cluster_Exp.py'
+args = c('merged_raw_counts.filtered.donor1.txt', 'annotation_D1_Lung.txt','out_Clusters_D1_LUNG.txt')
+allArgs = c(path2script,args )
+system2(command, allArgs)
 ````
 
-## Prepare expression matrix for ARACNe
+Otherwise go to the terminal and type:
 ````
-expmat<-merged.cpm[,names_cells]
-dim(expmat)
-expmat<-unique(expmat)
-dim(expmat)
-#remove the version of the ensembleID: remove the ".N"
-rownames(expmat)<-substr(rownames(expmat),1,15)
-dim(unique(expmat))
-
-#save the matrix 
-save(expmat,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/expression4ARACNe.rda")
+python3.6 Cluster_Exp.py merged_raw_counts.filtered.donor1.txt  annotation_D1_Lung.txt out_Clusters_D1_LUNG.txt
 ````
 
-# Generate ARACNe network
+
+# Generate ARACNe networks for each cluster ( with more than 300 cells)
 ````
 #Please visit  the ARACNe repository before to run ARACNe
 sh ARACNe_p.sh
 ````
+
 
 ## Virtual inference of protein activity  analysis by Viper
 ````

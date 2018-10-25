@@ -1,7 +1,7 @@
 
 
 ## A single cell pipeline for the identification of cell type-specific master regulators
-####### By Pasquale Laise (10-25-2018)
+####### by Pasquale Laise (10-25-2018)
 
 Paths for the HPC for datasets
 * Datasets: 

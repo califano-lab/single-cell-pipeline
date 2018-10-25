@@ -1,5 +1,7 @@
 
+
 ## A single cell pipeline for the identification of cell type-specific master regulators
+# By Pasquale Laise
 
 Paths for the HPC for datasets
 * Datasets: 
@@ -108,7 +110,7 @@ class(merged_raw_counts.filtered)
 head(merged_raw_counts.filtered[,1:3])
 ````
 
-# Perepare data for clustering analysis ( SCANPY pipeline in python)
+# Perepare data for clustering analysis (SCANPY pipeline in python)
 ````
 merged_raw_counts.filtered_2<-merged_raw_counts.filtered
 rownames(merged_raw_counts.filtered_2)<-substr(rownames(merged_raw_counts.filtered_2),1,15)
@@ -150,6 +152,47 @@ Otherwise go to the terminal and type:
 python3.6 Cluster_Exp.py merged_raw_counts.filtered.donor1.txt  annotation_D1_Lung.txt out_Clusters_D1_LUNG.txt
 ````
 
+Prepare data for ARACNE
+ ````
+clusters<-read.table("/Users/pl2659/Documents/SCANPY/out_Clusters_D1_LUNG.txt",sep="\t",header = T)
+head(clusters)
+message("Check the number of clusters")
+max(clusters$louvain)+1 # python start from zero, the if the max is 4 the number of clusters are 5 
+
+cluster_cells<-NULL
+for( i in 0:max(clusters$louvain))
+{
+  cluster_cells<-c(cluster_cells,sum((clusters$louvain==i)=="TRUE"))
+  message(paste("Cluster",i,'= '),sum((clusters$louvain==i)=="TRUE"))
+}
+
+message("Select all the cells with more than 300 clusters")
+names(cluster_cells)<-c(0:max(clusters$louvain))
+barplot(sort(cluster_cells),horiz = T)
+ind_clusters<-names(which(cluster_cells>300))
+
+cluster_0_cells<-clusters$X[grep("0",clusters$louvain)]
+cluster_1_cells<-clusters$X[grep("1",clusters$louvain)]
+cluster_2_cells<-clusters$X[grep("2",clusters$louvain)]
+
+expmat0<-merged.cpm[,cluster_0_cells]
+expmat1<-merged.cpm[,cluster_1_cells]
+expmat2<-merged.cpm[,cluster_2_cells]
+
+dim(expmat0)
+dim(expmat1)
+dim(expmat2)
+
+````
+Save the matrices for ARACNe
+
+````
+save(expmat0,file="~/d1-lung_c0_expression4ARACNe.rda")
+save(expmat1,file="~/d1-lung_c1_expression4ARACNe.rda")
+save(expmat2,file="~/d1-lung_c2_expression4ARACNe.rda")
+````
+
+
 
 # Generate ARACNe networks for each cluster ( with more than 300 cells)
 ````
@@ -158,7 +201,7 @@ sh ARACNe_p.sh
 ````
 
 
-## Virtual inference of protein activity  analysis by Viper
+# Virtual inference of protein activity  analysis by Viper
 ````
 library(viper)
 source("R/ComplementaryFunctions.r")

@@ -1,8 +1,8 @@
 
 
 ## A single cell pipeline for the identification of cell type-specific master regulators
-By Pasquale Laise (10-25-2018)
-
+####### By Pasquale Laise (10-25-2018)
+######################################
 Paths for the HPC for datasets
 * Datasets: 
   * ```/ifs/scratch/c2b2/ac_lab/CZI/peter_data```
@@ -199,8 +199,6 @@ save(expmat2,file="~/d1-lung_c2_expression4ARACNe.rda")
 #Please visit  the ARACNe repository before to run ARACNe
 sh ARACNe_p.sh
 ````
-
-
 # Virtual inference of protein activity  analysis by MetaVIPER
 ````
 library(viper)

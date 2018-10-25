@@ -1,7 +1,7 @@
 
 
 ## A single cell pipeline for the identification of cell type-specific master regulators
-By Pasquale Laise (created on 10-25-2018)
+By Pasquale Laise (10-25-2018)
 
 Paths for the HPC for datasets
 * Datasets: 
@@ -10,12 +10,12 @@ Paths for the HPC for datasets
 * ARACNe repository: 
   * ```/ifs/scratch/c2b2/ac_lab/CZI/aracne-repository```
 
-## Example: DONOR1 (Lung))
+## Example: DONOR1 (Lung)
 
 ````
 rm(list=ls(all=T))
 library(cluster)
-library(ggfortify)
+library(data.table)
 
 ````
 ### Load data sets
@@ -194,14 +194,14 @@ save(expmat2,file="~/d1-lung_c2_expression4ARACNe.rda")
 
 
 
-# Generate ARACNe networks for each cluster ( with more than 300 cells)
+# Generate ARACNe networks for each cluster (with more than 300 cells)
 ````
 #Please visit  the ARACNe repository before to run ARACNe
 sh ARACNe_p.sh
 ````
 
 
-# Virtual inference of protein activity  analysis by Viper
+# Virtual inference of protein activity  analysis by MetaVIPER
 ````
 library(viper)
 source("R/ComplementaryFunctions.r")

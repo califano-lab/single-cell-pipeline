@@ -192,7 +192,43 @@ save(expmat1,file="~/d1-lung_c1_expression4ARACNe.rda")
 save(expmat2,file="~/d1-lung_c2_expression4ARACNe.rda")
 ````
 
+# Prepare meta cells in each cluster using the following script
 
+````
+library(FNN)
+
+knn_10<-get.knn(t(exp_mat),10,algorithm = "brute")
+````
+Select the cells  that were already filtered from the original umi matrix
+````
+umi<- your_raw_count
+umi_exp<-umi[,colnames(exp_mat)]
+````
+Create an empty matrix 
+
+````
+sum_knn<-matrix(0,length(umi_exp[,1]),length(umi_exp[1,]))
+````
+Generate a matrix with meta_cells
+````
+#check that  the same  cells are selected
+
+ for (i in 1:length(umi_exp[1,]))
+   {
+     sum_knn[,i]<-apply(umi_exp[,colnames(umi_exp[,c(i,knn_10$nn.index[i,])])],1,sum)
+     print(i)
+   }
+
+ dim(sum_knn)
+ 
+ # Add rown names and colnames
+ rownames(sum_knn)<-rownames(umi_exp)
+ colnames(sum_knn)<-colnames(umi_exp)
+
+````
+The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove again genes with zero counts)
+
+Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe building a network for each cluster.
 
 # Generate ARACNe networks for each cluster (with more than 300 cells)
 ````

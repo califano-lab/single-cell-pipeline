@@ -158,7 +158,7 @@ Otherwise go to the terminal and type:
 python3.6 Cluster_Exp.py merged_raw_counts.filtered.donor1.txt  annotation_D1_Lung.txt out_Clusters_D1_LUNG.txt
 ````
 
-Prepare data for ARACNE
+Prepare data for ARACNe
  ````
 clusters<-read.table("/Users/pl2659/Documents/SCANPY/out_Clusters_D1_LUNG.txt",sep="\t",header = T)
 head(clusters)
@@ -197,6 +197,13 @@ saveRDS(expmat0,file="~/d1-lung_c0_expression4ARACNe.rds")
 saveRDS(expmat1,file="~/d1-lung_c1_expression4ARACNe.rds")
 saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 ````
+
+
+
+
+
+
+
 
 # Meta-cells inference in each cluster
 
@@ -245,7 +252,7 @@ saveRDS(tpm_KNN,file="~/MetaCells_Cluster.rda")
 
 ````
 Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe to build a network for each cluster.
-
+The same procedure is applied if clustering is performed using metaVIPER.
 # Generate ARACNe networks for each cluster (with more than 300 cells)
 ````
 #Please visit  the ARACNe repository before to run ARACNe
@@ -269,6 +276,8 @@ rownames(merged.cpm_unique)<-substr(rownames(merged.cpm_unique),1,15)
 # Infer  protein activity 
 pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale")
 ````
+You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
+
 Perform PCA based on protein activity
 ````
 pca_pa<-prcomp(t(pa_D1_lung))

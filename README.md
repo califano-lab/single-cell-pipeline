@@ -138,8 +138,14 @@ write.table(merged_raw_counts.filtered_2,"~/merged_raw_counts.filtered.donor1.tx
 write.table(merged.cpm,"~/Normalized_merged_counts.filtered.donor1.txt",sep="\t")
 write.table(as.vector(annotation_D1_Lung),"~/annotation_D1_Lung.txt",sep="\t",row.names = F,quote=F,col.names = F)
 ````
-#### APPLY LOUVEIN CLUSTERING ALGORITHM (FROM SCANPY pipeline) ####
+
+# CLUSTERTING ANALYSIS
+There are two options: i) the first option is to perform clustering using gene expression data; ii) the second option is to apply metaVIPER for clustering analysis (using GTEX networks for normal cells and TCGA for cancer cells)
+
+i) Gene expression based clustering: APPLY LOUVEIN CLUSTERING ALGORITHM (from SCANPY pipeline)
 ````
+library(reticulate)
+
 command<- "python3.6"
 path2script='~/Cluster_Exp.py'
 args = c('merged_raw_counts.filtered.donor1.txt', 'annotation_D1_Lung.txt','out_Clusters_D1_LUNG.txt')
@@ -187,21 +193,24 @@ dim(expmat2)
 Save the matrices for ARACNe
 
 ````
-save(expmat0,file="~/d1-lung_c0_expression4ARACNe.rda")
-save(expmat1,file="~/d1-lung_c1_expression4ARACNe.rda")
-save(expmat2,file="~/d1-lung_c2_expression4ARACNe.rda")
+saveRDS(expmat0,file="~/d1-lung_c0_expression4ARACNe.rds")
+saveRDS(expmat1,file="~/d1-lung_c1_expression4ARACNe.rds")
+saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 ````
 
-# Prepare meta cells in each cluster using the following script
+# Meta-cells inference in each cluster
+
+Load the expression matrix  and rawcount matrix (UMI) for each cluster and compute meta-cells. For example:
 
 ````
 library(FNN)
-
+exp_mat<-readRDS('~/d1-lung_c0_expression4ARACNe.rds')
 knn_10<-get.knn(t(exp_mat),10,algorithm = "brute")
+umi<-read.table("~/merged_raw_counts.filtered.donor1.txt",sep="\t")
 ````
 Select the cells  that were already filtered from the original umi matrix
+
 ````
-umi<- your_raw_count
 umi_exp<-umi[,colnames(exp_mat)]
 ````
 Create an empty matrix 
@@ -226,9 +235,16 @@ Generate a matrix with meta_cells
  colnames(sum_knn)<-colnames(umi_exp)
 
 ````
-The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove again genes with zero counts)
+The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove n genes with zero counts). You can use the following code to do it:
 
-Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe building a network for each cluster.
+````
+ind <- colSums(sum_knn)>0
+tpm_KNN <- log2(t(t(sum_knn[, ind])/(colSums(sum_knn[, ind])/1e6)) + 1)
+
+saveRDS(tpm_KNN,file="~/MetaCells_Cluster.rda")
+
+````
+Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe to build a network for each cluster.
 
 # Generate ARACNe networks for each cluster (with more than 300 cells)
 ````

@@ -139,7 +139,7 @@ write.table(merged.cpm,"~/Normalized_merged_counts.filtered.donor1.txt",sep="\t"
 write.table(as.vector(annotation_D1_Lung),"~/annotation_D1_Lung.txt",sep="\t",row.names = F,quote=F,col.names = F)
 ````
 
-# CLUSTERTING ANALYSIS
+# Clustering analysis
 There are two options: i) the first option is to perform clustering using gene expression data; ii) the second option is to apply metaVIPER for clustering analysis (using GTEX networks for normal cells and TCGA for cancer cells)
 
 i) Gene expression based clustering: APPLY LOUVEIN CLUSTERING ALGORITHM (from SCANPY pipeline)

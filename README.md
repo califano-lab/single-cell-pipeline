@@ -142,163 +142,69 @@ write.table(as.vector(annotation_D1_Lung),"~/annotation_D1_Lung.txt",sep="\t",ro
 # Clustering analysis
 There are two options: i) the first option is to perform clustering using gene expression data; ii) the second option is to apply metaVIPER for clustering analysis (using GTEX networks for normal cells and TCGA for cancer cells)
 
-i) Gene expression based clustering: APPLY LOUVEIN CLUSTERING ALGORITHM (from SCANPY pipeline)
-````
-library(reticulate)
+# Clustering based on GTEX networks
 
-command<- "python3.6"
-path2script='~/Cluster_Exp.py'
-args = c('merged_raw_counts.filtered.donor1.txt', 'annotation_D1_Lung.txt','out_Clusters_D1_LUNG.txt')
-allArgs = c(path2script,args )
-system2(command, allArgs)
-````
+Set directory for GETX  networks
 
-Otherwise go to the terminal and type:
 ````
-python3.6 Cluster_Exp.py merged_raw_counts.filtered.donor1.txt  annotation_D1_Lung.txt out_Clusters_D1_LUNG.txt
-````
+path_dir<-'~/ac_lab_scratch/CZI/aracne-repository/GTEx/'
+file_names=as.list(dir(path = path_dir, pattern="*.rda"))
 
-Prepare data for ARACNe
- ````
-clusters<-read.table("/Users/pl2659/Documents/SCANPY/out_Clusters_D1_LUNG.txt",sep="\t",header = T)
-head(clusters)
-message("Check the number of clusters")
-max(clusters$louvain)+1 # python start from zero, the if the max is 4 the number of clusters are 5 
-
-cluster_cells<-NULL
-for( i in 0:max(clusters$louvain))
+regList <- list()
+for(i in 1:length(file_names)) 
 {
-  cluster_cells<-c(cluster_cells,sum((clusters$louvain==i)=="TRUE"))
-  message(paste("Cluster",i,'= '),sum((clusters$louvain==i)=="TRUE"))
+  new.reg <- get(load(paste0(path_dir,file_names[[i]]))) 
+  new.name <-paste0("reg_",i)
+  regList[[new.name]] <- new.reg
 }
-
-message("Select all the cells with more than 300 clusters")
-names(cluster_cells)<-c(0:max(clusters$louvain))
-barplot(sort(cluster_cells),horiz = T)
-ind_clusters<-names(which(cluster_cells>300))
-
-cluster_0_cells<-clusters$X[grep("0",clusters$louvain)]
-cluster_1_cells<-clusters$X[grep("1",clusters$louvain)]
-cluster_2_cells<-clusters$X[grep("2",clusters$louvain)]
-
-expmat0<-merged.cpm[,cluster_0_cells]
-expmat1<-merged.cpm[,cluster_1_cells]
-expmat2<-merged.cpm[,cluster_2_cells]
-
-dim(expmat0)
-dim(expmat1)
-dim(expmat2)
-
-````
-Save the matrices for ARACNe
-
-````
-saveRDS(expmat0,file="~/d1-lung_c0_expression4ARACNe.rds")
-saveRDS(expmat1,file="~/d1-lung_c1_expression4ARACNe.rds")
-saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 ````
 
-
-
-
-
-
-
-
-# Meta-cells inference in each cluster
-
-Load the expression matrix  and rawcount matrix (UMI) for each cluster and compute meta-cells. For example:
+Load the the gene expression file (normalized)
 
 ````
-library(FNN)
-exp_mat<-readRDS('~/d1-lung_c0_expression4ARACNe.rds')
-knn_10<-get.knn(t(exp_mat),10,algorithm = "brute")
-umi<-read.table("~/merged_raw_counts.filtered.donor1.txt",sep="\t")
-````
-Select the cells  that were already filtered from the original umi matrix
+library(data.table)
+library(atools)
+exp_mat<-fread("~/Normalized_merged_counts.filtered.donor1.txt",colClasses = "numeric")
+exp_mat<-as.data.frame(exp_mat)
+head(exp_mat[,1:4])
+ensemble_id<-exp_mat[,1]
+exp_mat<-exp_mat[,-1]
+rownames(exp_mat)<-ensemble_id
+head(exp_mat[,1:4])
+
+# Convert from Ensemble to entrezID, because all the GTEX networks have been generated in entrez IDs
+exp_entrez<-Ensemble2entrez(exp_mat)
+
+head(exp_entrez[,1:3])
+
+#Compute the double rank singnature
+rank_exp_entrez <- apply(exp_entrez, 2, rank)
+median <- apply(rank_exp_entrez, 1, median)
+mad <- apply(rank_exp_entrez, 1, mad)
+signature_entrez<- (rank_exp_entrez - median)/mad
 
 ````
-umi_exp<-umi[,colnames(exp_mat)]
-````
-Create an empty matrix 
+Apply metaVIPER
 
 ````
-sum_knn<-matrix(0,length(umi_exp[,1]),length(umi_exp[1,]))
-````
-Generate a matrix with meta_cells
-````
-#check that  the same  cells are selected
+mat_pa<-metaVIPER(eset = signature_entrez,regulon = regList,weight = "max", method = "none") # ATTENTION: "method" must be "none" when the signature is precomputed. Otherwise metaVIPER will calculate the signature using the method "scale"
 
- for (i in 1:length(umi_exp[1,]))
-   {
-     sum_knn[,i]<-apply(umi_exp[,colnames(umi_exp[,c(i,knn_10$nn.index[i,])])],1,sum)
-     print(i)
-   }
-
- dim(sum_knn)
- 
- # Add rown names and colnames
- rownames(sum_knn)<-rownames(umi_exp)
- colnames(sum_knn)<-colnames(umi_exp)
-
-````
-The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove n genes with zero counts). You can use the following code to do it:
-
-````
-ind <- colSums(sum_knn)>0
-tpm_KNN <- log2(t(t(sum_knn[, ind])/(colSums(sum_knn[, ind])/1e6)) + 1)
-
-saveRDS(tpm_KNN,file="~/MetaCells_Cluster.rda")
-
-````
-Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe to build a network for each cluster.
-The same procedure is applied if clustering is performed using metaVIPER.
-# Generate ARACNe networks for each cluster (with more than 300 cells)
-````
-#Please visit  the ARACNe repository before to run ARACNe
-sh ARACNe_p.sh
-````
-# Virtual inference of protein activity  analysis by MetaVIPER
-````
-library(viper)
-source("R/ComplementaryFunctions.r")
-load("R/desc.rda")
-
-# Create the regulon
-net_path<-file.path("~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/LUNG_DONOR1-tf-network.tsv")
-regul_LUNG_DONOR1<-aracne2regulon(net_path,expmat,format = "3col")
-
-#save(regul_LUNG_DONOR1,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/regul_LUNG_DONOR.rda")
-merged.cpm_unique<-unique(merged.cpm)
-
-rownames(merged.cpm_unique)<-substr(rownames(merged.cpm_unique),1,15)
-
-# Infer  protein activity 
-pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale")
-````
-You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
-
-Perform PCA based on protein activity
-````
-pca_pa<-prcomp(t(pa_D1_lung))
-autoplot(pca_pa)
+#convert to symbols
+rownames(mat_pa)<-entrez2gene(rownames(mat_pa))
 ````
 
-Define the optimal number of clusters
-````
-sil_score<-NULL
+Clustering based on protein activity
 
-for (i in 2:6)
-{
-   sil_score<-c(sil_score,pam(as.dist(viperSimilarity(pa_D1_lung)), i)$silinfo$avg.width)
-  }
-plot(c(2:5),sil_score,type = "b")  
-````
-````
-## the optimal number of cluster is 3
-pam_cl<-pam(as.dist(viperSimilarity(pa_D1_lung)), 3)
-````
-Associate MRs to each cluster
+
+
+
+
+
+
+
+
+
+
 
 
 

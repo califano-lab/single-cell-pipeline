@@ -274,31 +274,25 @@ merged.cpm_unique<-unique(merged.cpm)
 rownames(merged.cpm_unique)<-substr(rownames(merged.cpm_unique),1,15)
 
 # Infer  protein activity 
-pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale")
-````
-You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
+pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale") #*
 
-Perform PCA based on protein activity
+write.table(pa_D1_lung,"~/PA__D1_lung_metaVIPER.txt",sep="\t")
 ````
-pca_pa<-prcomp(t(pa_D1_lung))
-autoplot(pca_pa)
+*You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
+
+# Clustering analysis based on protein activity
+````
+library(reticulate)
+command<- "python3.6"
+path2script='~/ProteinActivityClusteringSCANPY.py'
+args = c('PA__D1_lung_metaVIPER.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_D1_LUNG.txt')
+allArgs = c(path2script,args )
+system2(command, allArgs)
 ````
 
-Define the optimal number of clusters
-````
-sil_score<-NULL
 
-for (i in 2:6)
-{
-   sil_score<-c(sil_score,pam(as.dist(viperSimilarity(pa_D1_lung)), i)$silinfo$avg.width)
-  }
-plot(c(2:5),sil_score,type = "b")  
-````
-````
-## the optimal number of cluster is 3
-pam_cl<-pam(as.dist(viperSimilarity(pa_D1_lung)), 3)
-````
-Associate MRs to each cluster
+
+
 
 
 

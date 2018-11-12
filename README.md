@@ -264,23 +264,32 @@ library(viper)
 source("R/ComplementaryFunctions.r")
 load("R/desc.rda")
 
-# Create the regulon
+eset<-ExpressionSet(expmat)
+# Example  of hoe to generate a regulon object
 net_path<-file.path("~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/LUNG_DONOR1-tf-network.tsv")
-regul_LUNG_DONOR1<-aracne2regulon(net_path,expmat,format = "3col")
+example_reg<-aracne2regulon(net_path,eset,format = "3col")
+#save(example_reg,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/regul_LUNG_DONOR.rda")
 
-#save(regul_LUNG_DONOR1,file="~/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/regul_LUNG_DONOR.rda")
-merged.cpm_unique<-unique(merged.cpm)
+After all the regulons are computed we can load them and apply metaVIPER
 
-rownames(merged.cpm_unique)<-substr(rownames(merged.cpm_unique),1,15)
+#Load the regulons
+net1<-readRDS("/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/d1-lung_cluster0_mergedNet.rds")
+net2<-readRDS("/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/d1-lung_cluster1_mergedNet.rds")
+net3<-readRDS("/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/d1-lung_cluster2_mergedNet.rds")
 
+## Load expression matrix (normalized)for each cluster
+
+exp_cluster1<-readRDS(~/d1-lung_c0_expression4ARACNe.rds)
 # Infer  protein activity 
-pa_D1_lung<-viper(merged.cpm_unique, regulon =regul_LUNG_DONOR1,method = "scale") #*
+pa_D1_lung<-viper(merged.exp_cluster1, regulon =as.list(net1,net2,net3),method = "scale") #*
 
+## write the Protein activity matrix and do clustering analysis
 write.table(pa_D1_lung,"~/PA__D1_lung_metaVIPER.txt",sep="\t")
 ````
 *You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
 
-# Clustering analysis based on protein activity
+# Clustering analysis based on protein activity ( python script: "ProteinActivityClusteringSCANPY.py")
+
 ````
 library(reticulate)
 command<- "python3.6"
@@ -289,6 +298,8 @@ args = c('PA__D1_lung_metaVIPER.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_
 allArgs = c(path2script,args )
 system2(command, allArgs)
 ````
+
+
 
 
 

@@ -196,6 +196,7 @@ write.table(mat_pa,"~/PA_GTEX_D1_Lung.txt",sep="\t")
 
 Clustering based on protein activity
 
+````
 library(reticulate)
 command<- "python3.6"
 path2script='~/ProteinActivityClusteringSCANPY.py'
@@ -203,7 +204,7 @@ args = c('PA_GTEX_D1_Lung.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_GTEX_D
 allArgs = c(path2script,args )
 system2(command, allArgs)
 
-
+````
 
 
 

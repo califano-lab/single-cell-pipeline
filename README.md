@@ -187,15 +187,21 @@ signature_entrez<- (rank_exp_entrez - median)/mad
 Apply metaVIPER
 
 ````
-mat_pa<-metaVIPER(eset = signature_entrez,regulon = regList,weight = "max", method = "none") # ATTENTION: "method" must be "none" when the signature is precomputed. Otherwise metaVIPER will calculate the signature using the method "scale"
+mat_pa<-metaVIPER(eset = signature_entrez,regulon = regList,weight = "max", method = "none") #ATTENTION: "method" must be "none" when the signature is precomputed. Otherwise metaVIPER will calculate the signature using the method "scale"
 
 #convert to symbols
 rownames(mat_pa)<-entrez2gene(rownames(mat_pa))
+write.table(mat_pa,"~/PA_GTEX_D1_Lung.txt",sep="\t")
 ````
 
 Clustering based on protein activity
 
-
+library(reticulate)
+command<- "python3.6"
+path2script='~/ProteinActivityClusteringSCANPY.py'
+args = c('PA_GTEX_D1_Lung.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_GTEX_D1_LUNG.txt')
+allArgs = c(path2script,args )
+system2(command, allArgs)
 
 
 

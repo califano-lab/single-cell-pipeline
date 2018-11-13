@@ -299,8 +299,17 @@ args = c('PA__D1_lung_metaVIPER.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_
 allArgs = c(path2script,args )
 system2(command, allArgs)
 ````
-#  Select cells associated to each cluster and indentify the MRs using the Stouffer intergration.
+#  Select cells associated to each cluster and indentify the MRs using the Stouffer integration.
+````
+In order  to select the clusters, use the same approach used in the previus step: "prepare data for ARACNe".
+#Example:
+#MRs asscociated to cluster 1
 
+#MRs_c1<-apply(PA_mat_C1,1,stouff)
+
+# See the top  10 MRs up-regulated and the top 10 MRs down-regulated
+sort (MRs_c1, decreasing=T) [1:10]
+````
 
 
 

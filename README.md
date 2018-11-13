@@ -281,14 +281,23 @@ net3<-readRDS("/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/d1-lung_clust
 
 exp_cluster1<-readRDS(~/d1-lung_c0_expression4ARACNe.rds)
 # Infer  protein activity 
-pa_D1_lung<-viper(merged.exp_cluster1, regulon =as.list(net1,net2,net3),method = "scale") #*
+pa_D1_lung<-metaVIPER(merged.exp_cluster1, regulon =as.list(net1,net2,net3),method = "scale") #*
 
 ## write the Protein activity matrix and do clustering analysis
 write.table(pa_D1_lung,"~/PA__D1_lung_metaVIPER.txt",sep="\t")
 ````
 *You can also use the double-rank transformation to compute signature but, in this case, remember to set method="none".
 
-# Clustering analysis based on protein activity ( python script: "ProteinActivityClusteringSCANPY.py")
+This is the code to run the double rank signature
+````
+# DON'T RUN 
+#rank_exp <- apply(exp_cluster1, 2, rank)
+#median_exp <- apply(rank_exp, 1, median)
+#mad_exp <- apply(rank_exp, 1, mad)
+#signature_exp <- (rank_exp - median_exp)/mad_exp
+````
+
+#Clustering analysis based on protein activity ( python script: "ProteinActivityClusteringSCANPY.py")
 
 ````
 library(reticulate)
@@ -298,6 +307,7 @@ args = c('PA__D1_lung_metaVIPER.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_
 allArgs = c(path2script,args )
 system2(command, allArgs)
 ````
+
 
 
 

@@ -205,55 +205,49 @@ saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 
 
 
-# Meta-cells inference in each cluster
+Meta-cells inference in each cluster
 ````
 library(data.table)
 library(reticulate)
 library(atools)
 source('~ComplementaryFunctions4scPipeline.r')
 ````
-#load the  the raw count UMI 
+load the  the raw count UMI 
 ````
 mdata<-fread("~/merged_raw_counts.filtered.donor1.txt",colClasses = "numeric")
+
 mdata<-as.data.frame(mdata)
 ensemble_id<-mdata[,1]
 mdata<-mdata[,-1]
 rownames(mdata)<-ensemble_id
-
 ````
 
-# Build meta-cells for each cluster
+Build meta-cells for each cluster using the function Knn_metaCells
+
+````
 meta_expmat0<-Knn_metaCells(expmat0,mdata,10)
 meta_expmat1<-Knn_metaCells(expmat1,mdata,10)
 meta_expmat2<-Knn_metaCells(expmat2,mdata,10)
 head(meta_expmat0[,1:4])
 head(tpm_KNN[,1:4])
+
 ## check size
 dim(meta_expmat0)
 dim(meta_expmat1)
 dim(meta_expmat2)
-
-
 #Save the matrix 
 save(meta_expmat0,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c0_expression4ARACNe.rda")
 save(meta_expmat1,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c1_expression4ARACNe.rda")
 save(meta_expmat2,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c2_expression4ARACNe.rda")
 
 ````
-The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove n genes with zero counts). You can use the following code to do it:
-
-````
-ind <- colSums(sum_knn)>0
-tpm_KNN <- log2(t(t(sum_knn[, ind])/(colSums(sum_knn[, ind])/1e6)) + 1)
-
-saveRDS(tpm_KNN,file="~/MetaCells_Cluster.rda")
-
-````
 Then, you need to randomly  select >200 cells  for each cluster and proceed with ARACNe to build a network for each cluster.
 The same procedure is applied if clustering is performed using metaVIPER.
+
 # Generate ARACNe networks for each cluster (with more than 300 cells)
+
+Please visit  the ARACNe repository before to run ARACNe
 ````
-#Please visit  the ARACNe repository before to run ARACNe
 sh ARACNe_p.sh
 ````
 # Virtual inference of protein activity  analysis by MetaVIPER

@@ -206,40 +206,36 @@ saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 
 
 # Meta-cells inference in each cluster
+library(data.table)
+library(reticulate)
+library(atools)
+source('~ComplementaryFunctions4scPipeline.r')
 
-Load the expression matrix  and rawcount matrix (UMI) for each cluster and compute meta-cells. For example:
+#load the  he raw count UMI 
+mdata<-fread("~/merged_raw_counts.filtered.donor1.txt",colClasses = "numeric")
+mdata<-as.data.frame(mdata)
+ensemble_id<-mdata[,1]
+mdata<-mdata[,-1]
+rownames(mdata)<-ensemble_id
 
-````
-library(FNN)
-exp_mat<-readRDS('~/d1-lung_c0_expression4ARACNe.rds')
-knn_10<-get.knn(t(exp_mat),10,algorithm = "brute")
-umi<-read.table("~/merged_raw_counts.filtered.donor1.txt",sep="\t")
-````
-Select the cells  that were already filtered from the original umi matrix
-
-````
-umi_exp<-umi[,colnames(exp_mat)]
-````
-Create an empty matrix 
 
 ````
-sum_knn<-matrix(0,length(umi_exp[,1]),length(umi_exp[1,]))
-````
-Generate a matrix with meta_cells
-````
-#check that  the same  cells are selected
+# Build meta-cells for each cluster
+meta_expmat0<-Knn_metaCells(expmat0,mdata,10)
+meta_expmat1<-Knn_metaCells(expmat1,mdata,10)
+meta_expmat2<-Knn_metaCells(expmat2,mdata,10)
+head(meta_expmat0[,1:4])
+head(tpm_KNN[,1:4])
+## check size
+dim(meta_expmat0)
+dim(meta_expmat1)
+dim(meta_expmat2)
 
- for (i in 1:length(umi_exp[1,]))
-   {
-     sum_knn[,i]<-apply(umi_exp[,colnames(umi_exp[,c(i,knn_10$nn.index[i,])])],1,sum)
-     print(i)
-   }
 
- dim(sum_knn)
- 
- # Add rown names and colnames
- rownames(sum_knn)<-rownames(umi_exp)
- colnames(sum_knn)<-colnames(umi_exp)
+#Save the matrix 
+save(meta_expmat0,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c0_expression4ARACNe.rda")
+save(meta_expmat1,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c1_expression4ARACNe.rda")
+save(meta_expmat2,file="/Volumes/ac_lab_scratch/CZI/Pas_results/DONOR1/LUNG/MC_d1-lung_c2_expression4ARACNe.rda")
 
 ````
 The "sum_knn" matrix is raw counts of meta-cells, it must be normalized.(Please, see the normalization step, and remove n genes with zero counts). You can use the following code to do it:

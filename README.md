@@ -207,10 +207,17 @@ system2(command, allArgs)
 ````
 ## Meta-cells inference from clusters identified using viperSimilarity as distance.
 
-Select clusters and infer meta-cells
+Select cells assciated to each cluster and compute the viper similarity matrix as distance matrix.
+````
+dist_matrix<-as.matrix(as.dist(viperSimilarity(mat_pa_symb)))
+````
+then use the  function "getKNN_VIPER" on the viper matrix to get a matrix with the "K" nearest neighbours.
+
+````
+KNN_mat<-getKNN_VIPER(dist_matrix,10) # in this case we set K=10
+````
 
 
-getKNN_VIPER
 
 
 

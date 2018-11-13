@@ -222,7 +222,7 @@ mdata<-mdata[,-1]
 rownames(mdata)<-ensemble_id
 ````
 
-Build meta-cells for each cluster using the function Knn_metaCells
+# Build meta-cells for each cluster using the function "Knn_metaCells"
 
 ````
 meta_expmat0<-Knn_metaCells(expmat0,mdata,10)
@@ -250,7 +250,7 @@ Please visit  the ARACNe repository before to run ARACNe
 ````
 sh ARACNe_p.sh
 ````
-# Virtual inference of protein activity  analysis by MetaVIPER
+# Virtual inference of protein activity  analysis by metaVIPER
 ````
 library(viper)
 source("R/ComplementaryFunctions.r")

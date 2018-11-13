@@ -205,10 +205,12 @@ allArgs = c(path2script,args )
 system2(command, allArgs)
 
 ````
-## Meta cells inference based on viperSimilarity based clusters
+## Meta-cells inference from clusters identified using viperSimilarity as distance.
+
+Select clusters and infer meta-cells
 
 
-
+getKNN_VIPER
 
 
 

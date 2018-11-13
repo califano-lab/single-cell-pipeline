@@ -206,20 +206,22 @@ saveRDS(expmat2,file="~/d1-lung_c2_expression4ARACNe.rds")
 
 
 # Meta-cells inference in each cluster
+````
 library(data.table)
 library(reticulate)
 library(atools)
 source('~ComplementaryFunctions4scPipeline.r')
-
-#load the  he raw count UMI 
+````
+#load the  the raw count UMI 
+````
 mdata<-fread("~/merged_raw_counts.filtered.donor1.txt",colClasses = "numeric")
 mdata<-as.data.frame(mdata)
 ensemble_id<-mdata[,1]
 mdata<-mdata[,-1]
 rownames(mdata)<-ensemble_id
 
-
 ````
+
 # Build meta-cells for each cluster
 meta_expmat0<-Knn_metaCells(expmat0,mdata,10)
 meta_expmat1<-Knn_metaCells(expmat1,mdata,10)

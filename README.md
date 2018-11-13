@@ -289,7 +289,7 @@ This is the code to run the double rank signature
 #signature_exp <- (rank_exp - median_exp)/mad_exp
 ````
 
-#Clustering analysis based on protein activity ( python script: "ProteinActivityClusteringSCANPY.py")
+# Clustering analysis based on protein activity (python script: "ProteinActivityClusteringSCANPY.py")
 
 ````
 library(reticulate)
@@ -299,6 +299,9 @@ args = c('PA__D1_lung_metaVIPER.txt', 'annotation_D1_Lung.txt','out_Clusters_PA_
 allArgs = c(path2script,args )
 system2(command, allArgs)
 ````
+#  Select cells associated to each cluster and indentify the MRs using the Stouffer intergration.
+
+
 
 
 

@@ -142,6 +142,11 @@ write.table(as.vector(annotation_D1_Lung),"~/annotation_D1_Lung.txt",sep="\t",ro
 # Clustering analysis
 There are two options: i) the first option is to perform clustering using gene expression data; ii) the second option is to apply metaVIPER for clustering analysis (using GTEX networks for normal cells and TCGA for cancer cells)
 
+Load libraries
+ ````
+library(data.table)
+library(atools)
+````
 # Clustering based on GTEX networks
 
 Set directory for GETX  networks
@@ -162,8 +167,6 @@ for(i in 1:length(file_names))
 Load the the gene expression file (normalized)
 
 ````
-library(data.table)
-library(atools)
 exp_mat<-fread("~/Normalized_merged_counts.filtered.donor1.txt",colClasses = "numeric")
 exp_mat<-as.data.frame(exp_mat)
 head(exp_mat[,1:4])

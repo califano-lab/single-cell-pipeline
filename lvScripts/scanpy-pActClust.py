@@ -33,4 +33,5 @@ sc.tl.louvain(adata,resolution=0.3)
 sc.pl.umap(adata, color=['louvain'], save = '_' + name + '_clusters.pdf')
 #sc.pl.umap(adata, color=['CD2'], save = '_' + name + '_CD2.pdf')
 ## write the UMAP for downstream analysis in R
-np.savetxt(outDir + name + '_pAct-louvainClust.txt', adata.obsm.X_umap, delimiter='\t')
+adata.obs.to_csv(outDir + name + '_pAct-louvainClust.txt', sep='\t')
+np.savetxt(outDir + name + '_pAct-UMAP.txt', adata.obsm.X_umap, delimiter='\t')

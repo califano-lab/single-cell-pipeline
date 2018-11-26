@@ -31,7 +31,6 @@ subDict <- gene.dict[which(gene.dict$Ensembl.Gene.ID %in% contained.ensembl),]
 subDict <- subDict[which(subDict$Entrez.Gene.ID != ''),]
 rank.signature <- rank.signature[subDict$Ensembl.Gene.ID,]
 rownames(rank.signature) <- subDict$Entrez.Gene.ID
-rm(subDict)
 ## load regulons in a list
 if(opt$print){ print('Loading networks...') }
 file_names=as.list(dir(path = opt$net_dir, pattern="*.rda"))
@@ -43,6 +42,9 @@ for(i in 1:length(file_names))
   regList[[new.name]] <- new.reg
 }
 ## perform metaviper 
+if(opt$print){ print('Performing metaVIPER...') }
 vip.mat <- viper(rank.signature, regulon = regList, method = 'none')
+## convert back to ENSEMBL
+rownames(vip.mat) <- subDict[match(rownames(vip.mat), subDict$Entrez.Gene.ID),]$Ensembl.Gene.ID
 ## save results
 saveRDS(vip.mat, file=paste(opt$out_dir, opt$out_name, '_GTExActivity.rds', sep=''))

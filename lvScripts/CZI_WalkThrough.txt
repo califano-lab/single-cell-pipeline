@@ -59,11 +59,15 @@ Run the following command:
 Rscript scanpy-prep.R --in_file=d1-lung_GTExActivity.rds --out_name=d1-lung_GTExActivity --out_dir=YOUR-OUT-DIRECTORY
 
 
-### STEP 3: pActClust.py ###
+### STEP 3: scanpy-clust.py ###
 
 Now, we'll cluster the protein activity using scanpy. This will use seurat's dispersion metrics to select the most variable proteins, then perform Louvain clustering on the cells and generate a text file with cluster labels for each cell.
 
 Run the following command:
+
+python3 scanpy-clust.py /mnt/c/Users/lvlah/linux/ac_lab/data
+/czi/pipelineDev/d1-lung_GTExActivity_scanpy-inDat.txt /mnt/c/Users/lvlah/linux/ac_lab/data/czi/pipelineDev/d1-lung_GTEx
+Activity_scanpy-inDat.txt d1-lung_GTEx /mnt/c/Users/lvlah/linux/ac_lab/data/czi/pipelineDev/
 
 
 ### STEP 4: clustSubset.R ###
@@ -82,3 +86,8 @@ Now, we generate meta cells for each cluster subset. For each subset from the pr
 Run the followign command (for each cluster):
 
 Rscript makeMetaCells.R --input_file=d1-lung_GTEx-clust_cluster-#.rds --out_dir=YOUR-OUT-DIRECTORY
+
+
+## STEP 6: run ARACNe ###
+
+Finally, we run ARACNe on the meta cells from each cluster. Use the subClustAracne.sh script on each of the meta cell files from the previous file

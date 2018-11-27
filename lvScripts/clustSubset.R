@@ -13,7 +13,7 @@ option_list <- list(
 opt <- parse_args(OptionParser(option_list = option_list))
 ## read in data
 in.dat <- readRDS(opt$input_file)
-cluster.labels <- read.table(opt$cluster_labels, header = TRUE, stringsAsFactors = FALSE)
+cluster.labels <- read.table(opt$cluster_labels, header = TRUE, stringsAsFactors = FALSE, row.names = NULL)
 s.ind <- opt$sample_index
 l.ind <- opt$cluster_index
 ## subset the clusters

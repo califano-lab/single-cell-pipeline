@@ -29,7 +29,7 @@ The CZI data arrives in two files; one for acting and one for resting. We'll mer
 
 Run the following command:
 
-Rscript cziMerge.R --rest_file=PP001.swap.filtered.matrix.txt.bz2 --act_file=PP002.swap.filtered.matrix.txt.bz2 --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY
+```Rscript cziMerge.R --rest_file=PP001.swap.filtered.matrix.txt.bz2 --act_file=PP002.swap.filtered.matrix.txt.bz2 --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ### STEP 1: preProcess.R ###
@@ -38,7 +38,7 @@ Next, we will take the raw data and perform some pre-processing steps. We'll rem
 
 Run the following command:
 
-Rscript preProcess.R --raw_file=YOUR-OUT-DIRECTORY/d1-lung_mergedRaw.rds --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY --min_count=1000 --max_count=100000
+```Rscript preProcess.R --raw_file=YOUR-OUT-DIRECTORY/d1-lung_mergedRaw.rds --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY --min_count=1000 --max_count=100000```
 
 
 ### STEP 2: metaViper.R ###
@@ -47,7 +47,7 @@ We'll now compute protein activity of the data using metaVIPER and the GTEx bulk
 
 Run the following command:
 
-Rscript gtex-metaViper.R --cpm_file=d1-lung_mergedCPM.rds --net_dir=GTEX-DIRECTORY --convert_dict=CONVERT-DICT --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY
+```Rscript gtex-metaViper.R --cpm_file=d1-lung_mergedCPM.rds --net_dir=GTEX-DIRECTORY --convert_dict=CONVERT-DICT --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ### STEP 2.5: scanpy-prep.R ###
@@ -56,7 +56,7 @@ Scanpy needs an anontation vector (indication source file of each cell) and cann
 
 Run the following command:
 
-Rscript scanpy-prep.R --in_file=d1-lung_GTExActivity.rds --out_name=d1-lung_GTExActivity --out_dir=YOUR-OUT-DIRECTORY
+```Rscript scanpy-prep.R --in_file=d1-lung_GTExActivity.rds --out_name=d1-lung_GTExActivity --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ### STEP 3: scanpy-clust.py ###
@@ -65,9 +65,7 @@ Now, we'll cluster the protein activity using scanpy. This will use seurat's dis
 
 Run the following command:
 
-python3 scanpy-clust.py /mnt/c/Users/lvlah/linux/ac_lab/data
-/czi/pipelineDev/d1-lung_GTExActivity_scanpy-inDat.txt /mnt/c/Users/lvlah/linux/ac_lab/data/czi/pipelineDev/d1-lung_GTEx
-Activity_scanpy-inDat.txt d1-lung_GTEx /mnt/c/Users/lvlah/linux/ac_lab/data/czi/pipelineDev/
+```python3 scanpy-clust.py d1-lung_GTExActivity_scanpy-inDat.txt d1-lung_GTExActivity_scanpy-inDat.txt d1-lung_GTEx YOUR-OUT-DIRECTORY```
 
 
 ### STEP 4: clustSubset.R ###
@@ -76,7 +74,7 @@ With our cluster labels in hand from scanpy, we will generate raw count files fo
 
 Run the following command:
 
-Rscript clustSubset.R --input_file=d1-lung_mergedFiltered.rds --cluster_labels= --sample_index= --cluster_index= --out_name=d1-lung_GTEx-clust --out_dir=YOUR-OUT-DIRECTORY
+```Rscript clustSubset.R --input_file=d1-lung_mergedFiltered.rds --cluster_labels= --sample_index= --cluster_index= --out_name=d1-lung_GTEx-clust --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ## STEP 5: makeMetaCells.R ###
@@ -85,7 +83,7 @@ Now, we generate meta cells for each cluster subset. For each subset from the pr
 
 Run the followign command (for each cluster):
 
-Rscript makeMetaCells.R --input_file=d1-lung_GTEx-clust_cluster-#.rds --out_dir=YOUR-OUT-DIRECTORY
+```Rscript makeMetaCells.R --input_file=d1-lung_GTEx-clust_cluster-#.rds --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ## STEP 6: run ARACNe ###

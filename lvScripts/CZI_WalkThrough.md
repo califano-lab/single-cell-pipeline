@@ -74,7 +74,7 @@ With our cluster labels in hand from scanpy, we will generate raw count files fo
 
 Run the following command:
 
-```Rscript clustSubset.R --input_file=d1-lung_mergedFiltered.rds --cluster_labels= --sample_index= --cluster_index= --out_name=d1-lung_GTEx-clust --out_dir=YOUR-OUT-DIRECTORY```
+```Rscript clustSubset.R --input_file=d1-lung_mergedFiltered.rds --cluster_labels=d1-lung_GTEx_pAct-louvainClust.txt --sample_index=1 --cluster_index=3 --out_name=d1-lung_GTEx-clust --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ## STEP 5: makeMetaCells.R ###

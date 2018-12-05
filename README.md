@@ -190,7 +190,7 @@ signature_entrez<- (rank_exp_entrez - median)/mad
 Apply metaVIPER
 
 ````
-mat_pa<-metaVIPER(eset = signature_entrez,regulon = regList,weight = "max", method = "none") #ATTENTION: "method" must be "none" when the signature is precomputed. Otherwise metaVIPER will calculate the signature using the method "scale"
+mat_pa<-metaVIPER(eset = signature_entrez,regulon = regList, method = "none") #ATTENTION: "method" must be "none" when the signature is precomputed. Otherwise metaVIPER will calculate the signature using the method "scale"
 
 #convert to symbols
 rownames(mat_pa)<-entrez2gene(rownames(mat_pa))

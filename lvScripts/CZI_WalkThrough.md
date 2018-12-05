@@ -20,7 +20,7 @@ PP002swap.filtered.matrix.txt.bz2
 
 Note that when these two files are specified as arguments to command line functions, you'll need to provide the full path to the files. The same goes for all files you specify as inputs. 
 
-To start, make a directory for the outputs of the analysis (which will be referred to as 'YOUR-OUT-DIRECTORY'). You'll also need an .rda file containing all the GTEx regulons and a conversion dictionary for converting gene names. Both are provided in the lvScripts folder as 'gtex-interactome-list-entrez.rds' and 'gene-convert-dict.rds' respectively.
+To start, make a directory for the outputs of the analysis (which will be referred to as 'YOUR-OUT-DIRECTORY'). You'll also need an .rda file containing all the GTEx regulons and a conversion dictionary for converting gene names. Both are provided as 'gtex-interactome-list-entrez.rds' (in the CZI folder on the cluster) and 'gene-convert-dict.rds' respectively.
 
 
 ### STEP 0: cziMerge.R ###

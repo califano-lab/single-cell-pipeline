@@ -106,6 +106,6 @@ Run the followign command (for each cluster):
 ```Rscript makeMetaCells.R --input_file=d1-lung_mergedVip-clust_cluster-#.rds --out_dir=YOUR-OUT-DIRECTORY```
 
 
-### STEP 6: run ARACNe ###
+### STEP 7: run ARACNe ###
 
 Finally, we run ARACNe on the meta cells from each cluster. Use the subClustAracne.sh script on each of the meta cell files from the previous file

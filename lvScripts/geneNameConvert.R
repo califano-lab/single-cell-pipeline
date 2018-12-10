@@ -19,7 +19,8 @@ if(opt$print){ print('Converting gene names...') }
 contained.names <- rownames(in.dat)[which(rownames(in.dat) %in% convert.dict[,opt$start_index])]
 subDict <- convert.dict[which(convert.dict[,opt$start_index] %in% contained.names),]
 subDict <- subDict[which(subDict[,opt$dest_index] != ''),]
-in.dat <- in.dat[subDict[,opt$start_index],]
+in.dat <- in.dat[as.character(subDict[,opt$start_index]),]
 rownames(in.dat) <- subDict[,opt$dest_index]
 ## save matrix with converted names
 saveRDS(in.dat, file = paste(opt$out_dir, opt$out_name, sep = ''))
+l

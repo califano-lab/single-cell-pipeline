@@ -1,13 +1,13 @@
 ## libraries
 library(optparse)
 library(viper)
-source()
 ## arguments
 option_list <- list(
   make_option(c('-q', '--quiet'), action='store_false', default=TRUE, help='Suppresses status updates.', dest='print'),
   make_option(c('-i', '--input_file'), type="character", help='Input raw count matrix for meta cell creation (genesXsamples).'),
-  make_option(c('-i', '--activity_file'), type="character", help='Matrix of protein activity for distance calculation (proteinsXsamples).'),
-  make_option(c('-c', '--num_cells'), type="integer", help='Number of meta cells to compute.'),
+  make_option(c('-a', '--activity_file'), type="character", help='Matrix of protein activity for distance calculation (proteinsXsamples).'),
+  make_option(c('-c', '--num_cells'), type="integer", help='Number of neighbors to use..', default=5),
+  make_option(c('-s', '--subset_size'), type="integer", help='Subsample size.', default=200)
   make_option(c('-n', '--out_name'), type="character", help='Name of output.'),
   make_option(c('-d', '--out_dir'), type="character", help='Directory for output.')
 )
@@ -28,7 +28,7 @@ KNN <- function(dist.mat, k){
   }
   return(neighbor.mat)
 }
-knn.neighbors <- KNN(dist_matrix, 10)
+knn.neighbors <- KNN(dist_matrix, opt$num_cells)
 ## create imputed matrix
 imputed.dat <- matrix(0, nrow = nrow(in.dat), ncol = ncol(in.dat))
 rownames(imputed.dat) <- rownames(in.dat); colnames(imputed.dat) <- colnames(in.dat)

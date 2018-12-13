@@ -109,4 +109,15 @@ Run the following command (for each cluster):
 
 ### STEP 7: run ARACNe ###
 
-Finally, we run ARACNe on the meta cells from each cluster. Use the subClustAracne.sh script on each of the meta cell files from the previous file
+Finally, we run ARACNe on the meta cells from each cluster. Use the subClustAracne.sh script on each of the meta cell files from the previous file.
+
+You should then re-run metaVIPER with the networks generated from the metacells for each cell, producing a new protein activity matrix. Then, recluster the data using the same script as earlier in the pipeline (see step 3, 3.5, and 4 for walkthroughs on these steps).
+
+
+### STEP 8: Master Regulators ###
+
+Finally, we want to find the master regulators for each cluster, using stouffer integration. 
+
+Run the following command (for each cluster):
+
+```Rscript mrAnalysis.R --activity_file=cluster_proteinActivity.rds --out_name=cluster-name_MRs.txt --out_dir=YOUR-OUT-DIRECTORY```

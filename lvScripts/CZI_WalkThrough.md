@@ -63,8 +63,11 @@ We'll now compute protein activity of the data using metaVIPER. This is a three 
 Step 1: run VIPER using the single cell network (To Do: add code to do this). Save the viper matrix as 'd1-lung_scNet-vip.rds'
 
 Step 2: run metaVIPER using the GTEx bulk networks, then convert the file to ensembl gene names
+
 ```mkdir d1-lung-GTEx-mVIP```
+
 ```bash metaViper.sh d1-lung_mergedCPM_entrez.rds d1-lung_mergedCPM_entrez.rds gtex-interactome-list-entrez.rds d1-lung-GTEx-mVIP```
+
 ```Rscript geneNameConvert.R --input_file=d1-lung_GTEx-mVip_entrez.rds --convert_dict=CONVERT-DICT --start_index=4 --dest_index=6 --out_name=d1-lung_GTEx-mVip.rds --out_dir=YOUR-OUT-DIRECTORY```
 
 Step 3: merge the two, using the GTEx bulk networks to fill in the inferred activity of regulators that the single cell network missed

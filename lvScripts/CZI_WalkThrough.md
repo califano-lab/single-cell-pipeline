@@ -57,15 +57,17 @@ Generate an ARACNe network using a random subsample of 500 cells from all of the
 
 ### STEP 3: metaViper.R ###
 
-We'll now compute protein activity of the data using metaVIPER. This is a three step process, incorporating both the single cell network and the GTEx interactormes:
-	1 - run VIPER using the single cell network (To Do: add code to do this). Save the viper matrix as 'd1-lung_scNet-vip.rds'
+We'll now compute protein activity of the data using metaVIPER. This is a three step process, incorporating both the single cell network and the GTEx interactormes. There are three steps to this process.
 
-	2 - run metaVIPER using the GTEx bulk networks, then convert the file to ensembl gene names
+
+Step 1: run VIPER using the single cell network (To Do: add code to do this). Save the viper matrix as 'd1-lung_scNet-vip.rds'
+
+Step 2: run metaVIPER using the GTEx bulk networks, then convert the file to ensembl gene names
 ```mkdir d1-lung-GTEx-mVIP```
 ```bash metaViper.sh d1-lung_mergedCPM_entrez.rds d1-lung_mergedCPM_entrez.rds gtex-interactome-list-entrez.rds d1-lung-GTEx-mVIP```
 ```Rscript geneNameConvert.R --input_file=d1-lung_GTEx-mVip_entrez.rds --convert_dict=CONVERT-DICT --start_index=4 --dest_index=6 --out_name=d1-lung_GTEx-mVip.rds --out_dir=YOUR-OUT-DIRECTORY```
 
-	3 - merge the two, using the GTEx bulk networks to fill in the inferred activity of regulators that the single cell network missed
+Step 3: merge the two, using the GTEx bulk networks to fill in the inferred activity of regulators that the single cell network missed
 ```Rscript viperMerge.R --priority_file=d1-lung_scNet-vip.rds --fill_file=d1-lung_GTEx-mVip.rds --out_name=d1-lung_mergedVip.rds --out_dir=YOUR-OUT-DIRECTORY```
 
 *To expedite the metaVIPER run, we will use Aaron's QSUB metaVIPER script.*

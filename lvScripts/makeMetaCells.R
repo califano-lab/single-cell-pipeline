@@ -38,6 +38,7 @@ for (i in 1:ncol(in.dat)) {
 }
 ## subset if specified
 imputed.dat <- imputed.dat[,sample(colnames(imputed.dat), size = opt$subset_size)]
+imputed.dat <- imputed.dat[ rowSums(imputed.dat) != 0, ]
 ## normalize if specified
 imputed.dat <- log2(t(t(imputed.dat) / (colSums(imputed.dat) / 1e6)) + 1)
 save(imputed.dat, file = paste(opt$out_dir, opt$out_name, '_metaCells.rda', sep = ''))

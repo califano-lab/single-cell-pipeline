@@ -52,7 +52,7 @@ Run the following command:
 
 ### STEP 2: single cell network ###
 
-Generate an ARACNe network using a random subsample of 500 cells from all of the data available for the tissue. To Do: add guide on how to do this.
+Here, we generate a single cell network using ENSEMBL gene IDs. Use the 'd1-lung-mergedCPM.rds' file, which has ENSEMBL names, and the regulator sets in '/ifs/scratch/c2b2/ac_lab/CZI/lv_pipeline/regSets/', which are in ENSEMBL. NOTE: Working on identifying one ARACNe script for everyone to use.
 
 
 ### STEP 3: metaViper.R ###
@@ -60,7 +60,7 @@ Generate an ARACNe network using a random subsample of 500 cells from all of the
 We'll now compute protein activity of the data using metaVIPER. This is a three step process, incorporating both the single cell network and the GTEx interactormes. There are three steps to this process.
 
 
-Step 1: run VIPER using the single cell network (To Do: add code to do this). Save the viper matrix as 'd1-lung_scNet-vip.rds'
+Step 1: run VIPER using the single cell network (To Do: add code to do this). Generate an internal rank transformation. Use d1-lung-mergedCPM.rds as the input and the network you computed in Step 2 as the interactome. Save the viper matrix as 'd1-lung_scNet-vip.rds'
 
 Step 2: run metaVIPER using the GTEx bulk networks, then convert the file to ensembl gene names
 

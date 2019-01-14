@@ -16,4 +16,4 @@ f.mat <- readRDS(opt$fill_file)
 fill.genes <- setdiff(rownames(f.mat), rownames(p.mat))
 merged.mat <- rbind(p.mat, f.mat[fill.genes,])
 ## write out the merged matrix
-saveRDS(merged.mat, file = opt$out_file)
+saveRDS(merged.mat, file = paste(opt$out_dir, opt$out_name, sep=''))

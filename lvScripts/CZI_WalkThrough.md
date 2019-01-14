@@ -82,7 +82,7 @@ Scanpy needs an anontation vector (indication source file of each cell) and cann
 
 Run the following command:
 
-```Rscript scanpy-prep.R --in_file=d1-lung_mergedVip.rds --out_name=d1-lung_mergedVip --out_dir=YOUR-OUT-DIRECTORY```
+```Rscript scanpy-prep.R --input_file=d1-lung_mergedVip.rds --out_name=d1-lung_mergedVip --out_dir=YOUR-OUT-DIRECTORY```
 
 
 ### STEP 4: scanpy-clust.py ###

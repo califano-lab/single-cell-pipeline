@@ -106,7 +106,6 @@ Run the following command:
 ### STEP 6: makeMetaCells.R ###
 
 Now, we generate meta cells for each cluster subset. For each subset from the previous step (where the cluster number replaces #), we create meta cells that can be run with ARACNe. In addition to the raw count matrix (from which meta cells will be computed and normalized), this script requires a matrix of protein activity, which is used to calculate inter-cell distance useing viper similarity. As a default, 5 neighbors are used, but that parameter can be changed with the 'num_cells' argument. Additionally, the meta cells will be subsampled to 200 cells by default, a parameter that can be changed with the 'subset_size' argument.
-
 Run the following command (for each cluster):
 
 ```Rscript makeMetaCells.R --input_file=d1-lung_mergedVip-clust_cluster-#.rds --activity_file=d1-lung_mergedVip.rds --out_name=d1-lung_mergedVip-cluster-# --out_dir=YOUR-OUT-DIRECTORY```
@@ -114,7 +113,7 @@ Run the following command (for each cluster):
 
 ### STEP 7: run ARACNe ###
 
-Finally, we run ARACNe on the meta cells from each cluster. Use the subClustAracne.sh script on each of the meta cell files from the previous file.
+Finally, we run ARACNe on the meta cells from each cluster. Use whatever ARACNe
 
 You should then re-run metaVIPER with the networks generated from the metacells for each cell, producing a new protein activity matrix. Then, recluster the data using the same script as earlier in the pipeline (see step 3, 3.5, and 4 for walkthroughs on these steps).
 

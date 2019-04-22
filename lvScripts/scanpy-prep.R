@@ -4,7 +4,7 @@ library(stringr)
 ## arguments
 option_list <- list(
   make_option(c('-q', '--quiet'), action='store_false', default=TRUE, help='Suppresses status updates.', dest='print'),
-  make_option(c('-i', '--input_file'), type="character", help='Input matrix to be subset (genesXsamples).'),
+  make_option(c('-i', '--input_file'), type="character", help='Input matrix to be prepped for scanpy (genesXsamples).'),
   make_option(c('-n', '--out_name'), type="character", help='Name of output.'),
   make_option(c('-d', '--out_dir'), type="character", help='Directory for output.')
 )

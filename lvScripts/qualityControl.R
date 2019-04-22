@@ -14,7 +14,7 @@ raw_mat <- readRDS(opt$input_file)
 ## generate plots and save
 if(opt$print){ print('Generating plots...') }
 outfile <- paste(opt$out_dir, opt$out_name, '_QC-Plots.pdf', sep='')
-pdf(outfile, onefile = TRUE) 
+pdf(outfile, onefile = TRUE, width = 8, height = 4)
 par(mfrow=c(1,3))
 boxplot(colSums(raw_mat), main = "Sequencing depth", frame.plot=F, col="orange")
 boxplot(colSums(raw_mat > 0), main = "Detected genes", frame.plot=F, col="cyan")

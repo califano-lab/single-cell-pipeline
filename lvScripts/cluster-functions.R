@@ -119,8 +119,62 @@ ClusterUMAP <- function(clustering, umap, plotTitle, plotPath) {
     ggtitle(plotTitle) + ggsave(plotPath, height=8, width=8)
 }
 
-
-
-
-
-
+#' Iterative clustering using PAM
+#' 
+#' @param dat.mat Matrix of data (features X samples).
+#' @param dist.func Functiont to compute a distance matrix from the data.
+#' @param iter.max Maximum number of iterations to use
+#' @param sil.thresh Minimum cluster quality threshold (default of 0.25).
+#' @param iter.num Internal parameter for tracking iteration depth.
+#' @return A data frame with samples in rows and iterations in columns, containing cluster labels for each iteration.
+IterPAM <- function(dat.mat, dist.func, iter.max = 3, sil.thresh = 0.25, iter.num = 1) {
+  print(iter.num)
+  # generate distance matrix
+  dist.mat <- dist.func(dat.mat)
+  # perform clustering
+  iter.clust <- PamKRange(dist.mat, verbose = FALSE)
+  sil.scores <- unlist(lapply(iter.clust, function(x) {x$silinfo$avg.width} ))
+  best.sil <- which.max(sil.scores)
+  # identify best clustering, prepare return object
+  opt.clust <- iter.clust[[names(best.sil)]]
+  clust.df <- data.frame(opt.clust$clustering); colnames(clust.df) <- c(paste0('iter.', iter.num))
+  opt.k <- length(table(opt.clust$clustering))
+  # return NULL if the clustering does not pass the threshold (ie is homogeneous)
+  if (max(sil.scores) < sil.thresh) { return(NULL) }
+  # return if this is the final iteration
+  if (iter.num >= iter.max) { return(clust.df) }
+  # iterate to next layer of clustering
+  clust.iters <- list()
+  for (i in 1:opt.k) {
+    # cluster the samples for this cluster
+    clust.samps <- which(opt.clust$clustering == i)
+    sub.clust <- IterPAM(dat.mat[,clust.samps], dist.func, 
+                         iter.max = iter.max, iter.num = iter.num + 1, sil.thresh = sil.thresh)
+    clust.iters[[i]] <- sub.clust
+  }
+  # if all the sub clusterings were null, return the df as is
+  if (all(lapply(clust.iters, is.null))) { return(clust.df) }
+  # build data frame with sub clusters
+  iter.cols <- max(unlist(lapply(clust.iters, function(x) { ncol(x) })))
+  while (ncol(clust.df) < iter.cols + 1) { # add dummy columns, that will be filled in later
+    clust.df <- cbind(clust.df, clust.df[,1])
+  }
+  space.vect <- rep(0, iter.cols)
+  for (i in 1:length(clust.iters)) { # add in the sub clustering labels
+    if (!is.null(clust.iters[[i]])) { # for all sub clusterings that were not null
+      # build to correct size
+      while(ncol(clust.iters[[i]]) < iter.cols) {
+        clust.iters[[i]] <- cbind(clust.iters[[i]], clust.iters[[i]][,1])
+      }
+      for (j in 1:iter.cols) {
+        clust.df[rownames(clust.iters[[i]]), (1 + j)] <- clust.iters[[i]][, j] + space.vect[[j]]
+        space.vect[[j]] <- space.vect[[j]] + length(unique(clust.iters[[i]][,j]))
+      }
+    } else {
+      space.vect <- space.vect + 1
+    }
+  }
+  # rename and return
+  colnames(clust.df) <- paste0('iter.', iter.num + 0:(ncol(clust.df) - 1))
+  return(clust.df)
+}

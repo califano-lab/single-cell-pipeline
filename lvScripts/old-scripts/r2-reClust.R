@@ -86,7 +86,7 @@ for (k in kmin:kmax) {
   }
   colnames(mrs) <- 1:k
   write.csv(mrs, file = paste(out_dir, out_name, '_k', k, '_masterRegulators.csv', sep = ''), quote=FALSE)
-  mrActivity <- c(mrActivity, avgMR / ncol(dat.mat))
+  mrActivity <- c(mrActivity, avgMR / ncol(dat.mat))6
   ## pheatmap
   sig <- unique(sig)
   sorted.cells <- sort(clustering$cluster)

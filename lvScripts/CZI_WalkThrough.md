@@ -1,127 +1,136 @@
 ### PACKAGES ###
 
-To get started, make sure you have the following R packages installed:
-stringr
-optparse
-viper
+These are the packages you'll need to run this pipeline:
+ - viper
+ - cluster
+ - ggplot2
+ - pheatmap
+ - RColorBrewer
 
-You'll also need to install the following python libraries (using python 3):
-numpy
-pandas
-scanpy
-igraph
+### WALKTHROUGH GUIDE ###
 
+This guide will go through a sample analysis using a dummy data set. There are a couple recurring names that will be mentioned:
+ - YOUR-CODE-PATH: this is the path to where you have saved the code for this package
+ - YOUR-OUT-PATH: this is the path to where you will store results
+ - YOUR-OUT-NAME: prefix to be appended to saved files
+ - RAW-DAT.rds: the starting file of the analysis, a raw count matrix in .rds format
+ - GTEX-NETS.rds: an .rds objects containing the list of GTEx interactomes, if being used.
 
-### INTRO ###
+Start by first loading in the files with the PISCES functions...
 
-This walkthrough will use the following two files from Peter Sims's CZI data as a starting point:
-PP001swap.filtered.matrix.txt.bz2
-PP002swap.filtered.matrix.txt.bz2
+```R
+source('YOUR-CODE-PATH/process-utils.R')
+source('YOUR-CODE-PATH/cluster-functions.R')
+source('YOUR-CODE-PATH/viper-utils.R')
+```
 
-Note that when these two files are specified as arguments to command line functions, you'll need to provide the full path to the files. The same goes for all files you specify as inputs. 
+...as well as the matrix of raw reads:
 
-To start, make a directory for the outputs of the analysis (which will be referred to as 'YOUR-OUT-DIRECTORY'). You'll also need an .rda file containing all the GTEx regulons and a conversion dictionary for converting gene names. Both are provided as 'gtex-interactome-list-entrez.rds' (in the CZI folder on the cluster) and 'gene-convert-dict.rds' respectively.
+```R
+raw.mat <- readRDS(RAW-DAT.rds)
+```
 
+Additionally, we recommend saving intermediate data at each step, since many of these steps will take a decent amount of time with an average sized single cell data set. These savign steps are not including in this walkthrough, but can be achieved with the saveRDS function in R.
 
-### STEP 0: cziMerge.R ###
+### STEP 0: PreProcessing ###
 
-The CZI data arrives in two files; one for acting and one for resting. We'll merge these two files, giving the cells appropriate names, and create a unified data frame for all donstream analysis. This is a 'Step 0' because it is unique to the CZI data set. 
+The first step is to generate some simple QC plots based on the raw reads, which will be saved in .pdf format. Next, we filter out low depth cells and low quality genes before converting the raw data into cpm and rank matrices:
 
-Run the following command:
+```R
+QCPlots(raw.mat, 'YOUR-OUT-PATH', 'YOUR-OUT-NAME')
+filt.mat <- QCTransform(raw.mat)
+cpm.mat <- CPMTransform(filt.mat)
+saveRDS(cpm.mat, 'YOUR-OUT-PATH/YOUR-OUT-NAME_cpm.rds')
+rank.mat <- RankTransform(cpm.mat
+```
 
-```Rscript cziMerge.R --rest_file=PP001.swap.filtered.matrix.txt.bz2 --act_file=PP002.swap.filtered.matrix.txt.bz2 --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY```
+By default, the filration step (QCTransform) will remove cells with fewer than 1000 or more than 100000 reads. These numbers are specific to Chromium technology, and should be tailored to your data set.
 
+### STEP 1: R1 Protein Activity and Clustering ###
 
-### STEP 1: preProcess.R ###
+The first portion of this step is to generate an ARACNe network from the entire data set. This network, refereed to as the *R1-net*, will be used for an intial round of protein activity inference and clustering. 
 
-Next, we will take the raw data and perform some pre-processing steps. We'll remove cells with either too few or too many counts as well as any genes with no reads. We'll also save a CPM normalized copy of the data.
+HOW-TO-GENRATE-NETWORK
 
-Run the following command:
+With the network created, we will infer protein activity:
 
-```Rscript preProcess.R --raw_file=YOUR-OUT-DIRECTORY/d1-lung_mergedRaw.rds --out_name=d1-lung --out_dir=YOUR-OUT-DIRECTORY --min_count=1000 --max_count=100000```
+```R 
+r1.net <- readRDS('YOUR-OUT-PATH/YOUR-OUT-NAME_pruned.rds')
+r1.pAct <- viper(rank.mat, r1.net, method = 'none')
+```
 
+Optionally, at this step, you can combine the results of the single-cell analysis with those from metaVIPER using the GTEx interactomes. Any regulons not included in the single-cell network will be filled in with data contained in the GTEx interactomes. If you're using this step, do the following:
 
-### STEP 1.5: gene name conversion ###
+```R
+gtex.nets <- readRDS(GTEX-NETS.rds)
+r1.gtex <- viper(rank.mat, gtex.nets, method = 'none')
+r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
+```
 
-Our GTEx interactomes are built using Entrez, but our data has Ensembl gene names. This step is necessary in order to convert gene names. Note: currently working on a new set of GTEx interactomes that will use Ensemble, making this step unnecessary.
+With the first round of protein activity inferred, clustering analysis can be performed on the protein activity-based distance metrix using PAM:
 
-Run the following command:
+```R
+r1.viperDist <- viperSimilarity(r1.pAct)
+r1.clust <- PamKRange(r1.viperDist)
+r1.clustSil <- SilScoreEval(r1.clust, r1.viperDist)
+```
 
-```Rscript geneNameConvert.R --input_file=d1-lung_mergedCPM.rds --convert_dict=CONVERT-DICT --start_index=6 --dest_index=4 --out_name=d1-lung_mergedCPM_entrez.rds --out_dir=YOUR-OUT-DIRECTORY```
+This will generate a set of clusterings for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicate cluster quality. If you would like the code to automatically generate a plot of the silhouette scores, usign the optional *plotPath* argument with the *SilScoreEval* function. 
 
+For this example, we will assume the optimal clustering occured with *k=2*, but you should analyze your data and choose the clustering with the highest average silhouette score. This clustering will now be subset into matrices that will be used for cluster-specific network generation. Additionally, meta-cells will be inferred from each matrix using the protein activity-based distance matrix.
 
-### STEP 2: single cell network ###
+```R
+clust.mats <- ClusterMatrices(cpm.mat, r1.clust$k2)
+c1.mCells <- MetaCells(clust.mats[[1]], r1.viperDist)
+saveRDS(c1.mCells, file = 'YOUR-CODE-PATH/YOUR-OUT-NAME_r1-c1-mCells.rds')
+c2.mCells <- MetaCells(clust.mats[[2]], r1.viperDist)
+saveRDS(c2.mCells, file = 'YOUR-CODE-PATH/YOUR-OUT-NAME_r1-c2-mCells.rds')
+```
 
-Here, we generate a single cell network using ENSEMBL gene IDs. Use the 'd1-lung-mergedCPM.rds' file, which has ENSEMBL names, and the regulator sets in '/ifs/scratch/c2b2/ac_lab/CZI/lv_pipeline/regSets/', which are in ENSEMBL. NOTE: Working on identifying one ARACNe script for everyone to use.
+### STEP 2: R2 Network Generation
 
+Before generating networks, we will infer
 
-### STEP 3: metaViper.R ###
+### STEP 3: R2 Protein Activity and Clustering ###
 
-We'll now compute protein activity of the data using metaVIPER. This is a three step process, incorporating both the single cell network and the GTEx interactormes. There are three steps to this process.
+We will now generate another round of protein activity inference using metaVIPER and the R2 networks:
 
+```R
+c1.net <- readRDS('YOUR-OUT-PATH/YOUR-OUT-NAME_c1-r2-net-pruned.rds')
+c1.net <- readRDS('YOUR-OUT-PATH/YOUR-OUT-NAME_c2-r2-net-pruned.rds')
+r2.pAct <- viper(rank.mat, list('c1' = c1.net, 'c2' = c2.net), method = 'none')
+```
 
-Step 1: run VIPER using the single cell network (To Do: add code to do this). Generate an internal rank transformation. Use d1-lung-mergedCPM.rds as the input and the network you computed in Step 2 as the interactome. Save the viper matrix as 'd1-lung_scNet-vip.rds'
+Next, clustering is performed using PAM, again using silhouette score to choose the optimal clustering:
 
-Step 2: run metaVIPER using the GTEx bulk networks, then convert the file to ensembl gene names
+```R
+r2.viperDist <- viperSimilarity(r2.pAct)
+r2.clust <- PamKRange(r2.viperDist)
+r2.clustSil <- SilScoreEval(r2.clust, r2.viperDist)
+```
 
-```mkdir d1-lung-GTEx-mVIP```
-
-```bash metaViper.sh d1-lung_mergedCPM_entrez.rds d1-lung_mergedCPM_entrez.rds gtex-interactome-list-entrez.rds d1-lung-GTEx-mVIP```
-
-```Rscript geneNameConvert.R --input_file=d1-lung_GTEx-mVip_entrez.rds --convert_dict=CONVERT-DICT --start_index=4 --dest_index=6 --out_name=d1-lung_GTEx-mVip.rds --out_dir=YOUR-OUT-DIRECTORY```
-
-Step 3: merge the two, using the GTEx bulk networks to fill in the inferred activity of regulators that the single cell network missed
-```Rscript viperMerge.R --priority_file=d1-lung_scNet-vip.rds --fill_file=d1-lung_GTEx-mVip.rds --out_name=d1-lung_mergedVip.rds --out_dir=YOUR-OUT-DIRECTORY```
-
-*To expedite the metaVIPER run, we will use Aaron's QSUB metaVIPER script.*
-
-
-### STEP 3.5: scanpy-prep.R ###
-
-Scanpy needs an anontation vector (indication source file of each cell) and cannot take RDS. Thus, a preprocessing step to create a scanpy friendly text file and an annotation vector is necessary. NOTE: I know this is ineffeicient and terrible, we're working on making it unnecessary.
-
-Run the following command:
-
-```Rscript scanpy-prep.R --input_file=d1-lung_mergedVip.rds --out_name=d1-lung_mergedVip --out_dir=YOUR-OUT-DIRECTORY```
-
-
-### STEP 4: scanpy-clust.py ###
-
-Now, we'll cluster the protein activity using scanpy. This will use seurat's dispersion metrics to select the most variable proteins, then perform Louvain clustering on the cells and generate a text file with cluster labels for each cell.
-
-Run the following command:
-
-```python3 scanpy-pActClust.py d1-lung_mergedVip_scanpy-inDat.txt d1-lung_mergedVip_scanpy-annotationVect.txt d1-lung_mergedVip YOUR-OUT-DIRECTORY```
-
-
-### STEP 5: clustSubset.R ###
-
-With our cluster labels in hand from scanpy, we will generate raw count files for each cluster that passes a specified size threshold.
-
-Run the following command:
-
-```Rscript clustSubset.R --input_file=d1-lung_mergedFiltered.rds --cluster_labels=d1-lung_mergedVip_pAct-louvainClust.txt --sample_index=1 --cluster_index=3 --out_name=d1-lung_mergedVip-clust --out_dir=YOUR-OUT-DIRECTORY```
-
-
-### STEP 6: makeMetaCells.R ###
-
-Now, we generate meta cells for each cluster subset. For each subset from the previous step (where the cluster number replaces #), we create meta cells that can be run with ARACNe. In addition to the raw count matrix (from which meta cells will be computed and normalized), this script requires a matrix of protein activity, which is used to calculate inter-cell distance useing viper similarity. As a default, 5 neighbors are used, but that parameter can be changed with the 'num_cells' argument. Additionally, the meta cells will be subsampled to 200 cells by default, a parameter that can be changed with the 'subset_size' argument.
-Run the following command (for each cluster):
-
-```Rscript makeMetaCells.R --input_file=d1-lung_mergedVip-clust_cluster-#.rds --activity_file=d1-lung_mergedVip.rds --out_name=d1-lung_mergedVip-cluster-# --out_dir=YOUR-OUT-DIRECTORY```
-
-
-### STEP 7: run ARACNe ###
-
-Finally, we run ARACNe on the meta cells from each cluster. Use whatever ARACNe
-
-You should then re-run metaVIPER with the networks generated from the metacells for each cell, producing a new protein activity matrix. Then, recluster the data using the same script as earlier in the pipeline (see step 3, 3.5, and 4 for walkthroughs on these steps).
+### STEP 4: R2 Clustering Analysis ###
 
 
-### STEP 8: Master Regulators ###
 
-Finally, we want to find the master regulators for each cluster, using stouffer integration. 
 
-Run the following command (for each cluster):
 
-```Rscript mrAnalysis.R --activity_file=cluster_proteinActivity.rds --out_name=cluster-name_MRs.txt --out_dir=YOUR-OUT-DIRECTORY```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

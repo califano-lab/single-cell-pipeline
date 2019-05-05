@@ -35,14 +35,6 @@ QCPlots <- function(raw.mat, plot.path, plot.prefix) {
   dev.off()
 }
 
-#' Transforms raw count matrix to CPM.
-#' 
-#' @param raw.mat Matrix of raw gene expression data (genes X samples).
-#' @return CPM transformed matrix.
-CPMTransform <- function(raw.mat) {
-  cpm.dat <- t(t(raw.mat) / (colSums(raw.mat) / 1e6))
-  return(cpm.dat)
-}
 
 #' Performs a rank transformation on a given matrix.
 #' 

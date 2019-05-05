@@ -134,6 +134,7 @@ IterPAM <- function(dat.mat, dist.func, iter.max = 3, sil.thresh = 0.25, iter.nu
   # perform clustering
   iter.clust <- PamKRange(dist.mat, verbose = FALSE)
   sil.scores <- unlist(lapply(iter.clust, function(x) {x$silinfo$avg.width} ))
+  print(sil.scores)
   best.sil <- which.max(sil.scores)
   # identify best clustering, prepare return object
   opt.clust <- iter.clust[[names(best.sil)]]

@@ -71,7 +71,7 @@ With the first round of protein activity inferred, clustering analysis can be pe
 
 ```R
 r1.viperDist <- viperSimilarity(r1.pAct)
-r1.clust <- PamKRange(r1.viperDist)
+r1.clust <- PamKRange(as.dist(r1.viperDist))
 r1.clustSil <- SilScoreEval(r1.clust, r1.viperDist)
 ```
 
@@ -105,7 +105,7 @@ Next, clustering is performed using PAM, again using silhouette score to choose 
 
 ```R
 r2.viperDist <- viperSimilarity(r2.pAct)
-r2.clust <- PamKRange(r2.viperDist)
+r2.clust <- PamKRange(as.dist(r2.viperDist))
 r2.clustSil <- SilScoreEval(r2.clust, r2.viperDist)
 ```
 

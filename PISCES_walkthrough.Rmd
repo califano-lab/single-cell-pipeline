@@ -1,0 +1,274 @@
+---
+title: "PISCES Walkthrough"
+author: "Lukas Vlahos, Pasquale Laise, Andrea Califano"
+output: html_document
+fig_align: 'center'
+---
+
+### Introduction
+
+Single-cell RNAseq is an incredibly powerful tool for analyzing the true biology of a system at the most granular level possible. However, the technological limitations of sequencing transcripts from single-cells present a myriad of problems. Techniques from bulk data are not directly transferable, and because the sequencing in each cell has so little depth, as many as 90% of genes in a given sample will have no reads / counts. Deconvoluting which of these 'dropouts' is due to noise and which are due to actual biological signal is challenging.
+
+Previous work with bulk RNAseq has demonstrated the efficacy of the ARACNe and VIPER algorithms. In short, ARACNe uses mutual information to infer a regulatory network from RNAseq data, and VIPER can leverage these networks to infer the protein activity of the master regulators of each sample. (For more on how these algorithms work, see references.) With PISCES, we extend these methodologies to single-cells, leveraging VIPER's functionality as a mutliplexed reporter of protein activity to overcome the challenges of dropouts and identify the underlying biology of single-cell populations.
+
+As currently designed, this pipeline requires a moderate level of comptuer science know-how. Access to cluster architecture is also advised, as computing networks on a single-core is very time consuming.
+
+### Setup
+
+To run this pipeline, you'll need to have the following packages installed:
+
+* viper
+* cluster
+* ggplot2
+* ggpubr
+* umap
+* pheatmap
+* RColorBrewer
+* Matrix
+* biomaRt
+* psych
+
+```{r include = FALSE}
+setwd('C://Users/lvlah/linux/ac_lab/single-cell-pipeline/')
+r1.pAct <- readRDS('tutorial/pbmc_r1-pAct.rds')
+r2.pAct <- readRDS('tutorial/pbmc_r2-pAct.rds')
+```
+
+This walkthrough will assume that you've set your working directoy to a folder containing the PISCES repo, and that all saved data will be deposited in the same directory. This is not recommended for practical use, and can be changed by specifying full paths when loading or saving in your own applications. 
+
+Start by loading in the PISCES functions as well as the provided test data. Note that this pipeline uses ENSMBL Gene IDs by default:
+
+```{r}
+source('functions/process-utils.R')
+source('functions/cluster-functions.R')
+source('functions/viper-utils.R')
+library(ggplot2)
+library(ggpubr)
+library(viper)
+library(pheatmap)
+library(RColorBrewer)
+raw.mat <- readRDS('tutorial/pbmc.rds')
+```
+
+Alternatively, if your data is still in 10x format, you can read it in this manner:
+
+```{r eval = FALSE}
+library(Matrix)
+raw.mat <- as.matrix(readMM('data/matrix.mtx'))
+genes <- read.table('data/genes.tsv', sep = '\t')
+barcodes <- read.table('data/barcodes.tsv', sep = '\t')
+colnames(raw.mat) <- barcodes[,1]
+rownames(raw.mat) <- genes[,1]
+```
+
+Additionally, we recommend saving intermediate data at each step, since many of these steps will take a decent amount of time with an average sized single cell data set. These savign steps are not including in this walkthrough, but can be achieved with the saveRDS function in R.
+
+### PreProcessing
+
+First, we perform some cursory QC on the data to check the distribution of read depth and genes detected in each sample:
+
+```{r, fig.align = 'center', fig.width = 9, fig.height = 5}
+QCPlots(raw.mat)
+```
+
+This QC analysis should inform subsequent filtration steps. By default, we remove any genes with no coutns, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature using a double rank transformation.
+
+```{r}
+filt.mat <- QCTransform(raw.mat)
+cpm.mat <- CPMTransform(filt.mat)
+rank.mat <- RankTransform(cpm.mat)
+```
+
+### R1 Network Generation
+
+NOTE: Because ARACNe takes a decent amount of time to run, we recommend setting up a cluster-based implementation. For ease-of-use in this tutorial, we have included the networks generated in this analysis within the tutorial, so that you do not need to generate them yourself. We encourage you to still read an understand this section, but you can also skip directly to **R1 Clustering**.
+
+In this first round of network generation, the entire data set is used to make a general network. If the dataset is very homogeneous (ie one cell type), then this network will be a good representation of the underlying regulatory structure of the data. If instead the data are heterogeneous an contain multiple subtypes, this network will not be represntative of true biology, but will still be useful for an initial round of clustering.
+
+The data must first be saved in a foramt that is compatible with the Java based ARACNe-AP implementation included in this pipeline:
+
+```{r eval = FALSE}
+ARACNeTable(cpm.mat, 'tutorial/pbmc-cpm.tsv')
+```
+
+TO DO: How to use ARACNe
+
+Finally, we convert the merged ARACNe results into a regulon object that can be used to infer protein activity with the VIPER algorithm:
+
+```{r eval = FALSE}
+RegProcess('tutorial/pbmc_r1-net-final.tsv', cpm.mat, out.dir = 'tutorial/', out.name = 'pbmc_r1-net-')
+```
+
+### R1 Clustering
+
+With the network created, we will infer protein activity:
+
+```{r eval = FALSE}
+r1.net <- readRDS('tutorial/pbmc_r1-net-pruned.rds')
+r1.pAct <- viper(rank.mat, r1.net, method = 'none')
+```
+
+Optionally, at this step, you can combine the results of the single-cell analysis with those from metaVIPER using the GTEx interactomes. Any regulons not included in the single-cell network will be filled in with data contained in the GTEx interactomes. If you're using this step, do the following:
+
+```{r eval = FALSE}
+gtex.nets <- readRDS('GTEX-NETS.rds')
+r1.gtex <- viper(rank.mat, gtex.nets, method = 'none')
+r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
+```
+
+With the first round of protein activity inferred, clustering analysis can be performed on the protein activity-based distance metrix using PAM:
+
+```{r, fig.align = 'center'}
+r1.viperDist <- as.dist(viperSimilarity(r1.pAct))
+r1.clusts <- PamKRange(r1.viperDist, kmin = 2, kmax = 10)
+r1.clustSil <- SilScoreEval(r1.clusts, r1.viperDist)
+plot.dat <- data.frame('k' = 2:10, 'Silhouette.Scores' = r1.clustSil)
+ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line() +
+  ggtitle('R1 Clustering Silhouette Scores')
+```
+
+This will generate a set of clusterings for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicate cluster quality. If you would like the code to automatically save a plot of the silhouette scores, usign the optional *plotPath* argument with the *SilScoreEval* function. 
+
+For this example, the optimal clustering occured with *k=3*, but you should analyze your data and choose the clustering with the highest average silhouette score. This clustering will now be subset into matrices that will be used for cluster-specific network generation. Additionally, meta-cells will be inferred from each matrix using the protein activity-based distance matrix.
+
+```{r eval = FALSE}
+r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.dir = 'tutorial', out.name = 'pbmc-r1-clusts')
+```
+
+### R2 Network Generation
+
+NOTE: As in the **R1 Network Generation** step, we have again included the ARACNe networks generated in this step within the tutorial. Once again, we encourage you to read and understand this section, but you can skip to the **R2 Clustering** section to continue with the analysis.
+
+```{r eval = FALSE}
+c1.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c1_finalNet.tsv', r1.clustMats[[1]], 
+                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c1_')
+c2.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c2_finalNet.tsv', r1.clustMats[[2]], 
+                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c2_')
+c3.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c3_finalNet.tsv', r1.clustMats[[3]], 
+                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c3_')
+```
+
+### R2 Clustering
+
+With new, more granular networks, we will follow the same steps as in the **R1 Clustering** section, starting by re-inferring protein activity: 
+
+```{r eval = FALSE}
+# load in networks
+c1.net <- readRDS('tutorial/r2-nets/pbmc-r2-c1_pruned.rds')
+c2.net <- readRDS('tutorial/r2-nets/pbmc-r2-c2_pruned.rds')
+c3.net <- readRDS('tutorial/r2-nets/pbmc-r2-c3_pruned.rds')
+# infer protein activity
+r2.pAct <- viper(rank.mat, list('c1' = c1.net, 'c2' = c2.net, 'c3' = c3.net), method = 'none')
+```
+
+Then, we will use this more accurate protein activity inference to generate a new clustering scheme:
+
+```{r, fig.align = 'center'}
+# generate clusterings
+r2.viperDist <- as.dist(viperSimilarity(r2.pAct))
+r2.clusts <- PamKRange(r2.viperDist, kmin = 2, kmax = 15)
+r2.clustSil <- SilScoreEval(r2.clusts, r2.viperDist)
+plot.dat <- data.frame('k' = 2:15, 'Silhouette.Scores' = r2.clustSil)
+ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line() +
+  ggtitle('R2 Clustering Silhouette Scores')
+```
+
+With a robust clustering scheme generated, we can now identify the master regulators of these clusters. For this data, we select *k=2* as the optimal clustering based on silhouette score. As stated previously, you should identify the optimal clustering for your own data, and incorporate biological insights as well as cluster quality metrics. As a pre-processing step, we now convert from ENSG to gene names for ease of interpretation:
+
+```{r}
+r2.pAct <- Ensemble2GeneName(r2.pAct)
+r2Clust.mrs <- GetMRs(r2.pAct, clustering = r2.clusts$k2$clustering, method = 'Stouffer', numMRs = 50, bottom = FALSE, weights = r2.clusts$k2$silinfo$widths[,3])
+```
+
+### Visualization Schemes
+
+The best visualization method for data with this many dimensions is a heatmap. In particular, a heatmap of the cluster specific master regulators will show how the most significant proteins in the clustering differ between clusters:
+
+```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
+ClusterHeatmap(r2.pAct[ MR_UnWrap(r2Clust.mrs) , ], clust = r2.clusts$k2$clustering, plotTitle = 'R2 Clustering: k = 2')
+```
+
+While 2D visualization does not present as much information as a heatmap showing all proteins, it is a more inuitive format in which to present data, particularly for traditional biologists. UMAP is used to perform a dimensionality reduction, using the master regulators as features to highlight the most important biological signal:
+
+```{r, fig.align = 'center'}
+dat.umap <- cbcMR_UMAP(r2.pAct)
+ClusterUMAP(r2.clusts$k2$clustering, dat.umap, 'R2 Clustering: k = 2')
+```
+
+### Iterative Clustering
+
+Many single-cell data sets will contain a wide variety of populations that are not equidistant. For instance, it will be much easier to separate epithelial cells and T-Cells then it will be to seperate CD4 and CD8 populations of T-Cells. To handle this challenge, we provide an iterative clustering protocal, that will analyze clusters separate from the rest of the data to look for more granular populations.
+
+The parameters for this function will need to change based on your specific data. If your data has many subpopultions, more iterations may be necessary. If you'd like to allow less robust clusters, the silhouette threshold can be lowered. Different distance functions can also be used, though we recommend the method below if you plan to use protein activity data:
+
+```{r}
+dist.func <- function(x) { as.dist(viperSimilarity(x)) }
+r2.iClust <- IterPAM(r2.pAct, dist.func)
+```
+
+We can visualize this clustering in a similar way to the **R2 Clustering**, but with a more detailed annotation that highlights the iterative clustering procedure:
+
+```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
+iClust.mrs <- GetMRs(r2.pAct, clustering = r2.iClust$clustering[,5], method = 'Stouffer', numMRs = 50, bottom = FALSE)
+annot.col <- data.frame(r2.iClust$clustering)
+for(i in 1:ncol(annot.col)) { annot.col[,i] <- as.factor(annot.col[,i]) }
+pheatmap(r2.pAct[ MR_UnWrap(iClust.mrs) , rownames(annot.col) ], scale = 'row', annotation_col = annot.col,
+         color = colorRampPalette(rev(brewer.pal(10, 'RdBu')))(100), height = 8, width = 6,
+         cluster_rows = TRUE, cluster_cols = FALSE, show_colnames = FALSE, show_rownames = FALSE,
+         main = 'R2 Protein Activity Iterative Clustering')
+```
+
+A UMAP plot can also be produced in the same manner as above:
+
+```{r, fig.align = 'center'}
+ClusterUMAP(r2.iClust$clustering[,5], dat.umap, 'R2 IterClust: i = 5')
+```
+
+### Superimposing Markers
+
+The clusters generated by this pipeline are totally unbiased by any canonical markers of cell type. However, superimposing such markers on the clusters generated using protein activity can offer insight as to the classificaiton of cell types, and inform your conclusions or future analysis. Below, we have generated plots of the activity of several canonical markers typically used to separate PBMC's in gene expression space:
+
+```{r, fig.height = 7, fig.width = 15, fig.align = 'center'}
+clust <- r2.iClust$clustering[,2]
+plot.dat <- data.frame('UMAP1' = dat.umap$layout[,1], 'UMAP2' = dat.umap$layout[,2])
+plot.dat[['cluster']] <- as.factor(clust[rownames(dat.umap$layout)])
+clusters <- ggplot(plot.dat, aes(x=UMAP1, y=UMAP2, color=cluster)) + geom_point() + ggtitle('Clusters')
+
+plot.dat[['CCR7']] <- scale(as.numeric(r2.pAct['CCR7',]))
+CCR7 <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = CCR7)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('CCR7')
+plot.dat[['CD8A']] <- scale(as.numeric(r2.pAct['CD8A',]))
+CD8A <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = CD8A)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('CD8A')
+plot.dat[['MS4A1']] <- scale(as.numeric(r2.pAct['MS4A1',]))
+MS4A1 <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = MS4A1)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('MS4A1')
+plot.dat[['PPBP']] <- scale(as.numeric(r2.pAct['PPBP',]))
+PPBP <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = PPBP)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('PPBP')
+plot.dat[['MS4A7']] <- scale(as.numeric(r2.pAct['MS4A7',]))
+MS4A7 <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = MS4A7)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('MS4A7')
+plot.dat[['IL7R']] <- scale(as.numeric(r2.pAct['IL7R',]))
+IL7R <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = IL7R)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('IL7R')
+plot.dat[['CD14']] <- scale(as.numeric(r2.pAct['CD14',]))
+CD14 <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = CD14)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('CD14')
+plot.dat[['FCER1A']] <- scale(as.numeric(r2.pAct['FCER1A',]))
+FCER1A <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = FCER1A)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('FCER1A')
+plot.dat[['FCGR3A']] <- scale(as.numeric(r2.pAct['FCGR3A',]))
+FCGR3A <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = FCGR3A)) + 
+  scale_colour_gradientn(colours = c('blue', 'white', 'red')) + ggtitle('FCGR3A')
+
+marker.plot <- ggarrange(clusters, CCR7, CD8A, MS4A1, PPBP, MS4A7, IL7R, CD14, FCER1A, FCGR3A, ncol = 5, nrow = 2)
+print(annotate_figure(marker.plot, top = text_grob('R2 Iterclust (i = 2) w/ Canonical PBMC Markers', size = 24)))
+```
+
+#### Acknowledgements
+
+Jeremy Dooley - for his advice and expertise in single cell sequencing experiments.
+
+Hongxu Ding - whose work in the Califano laid the groundwork for the development of this pipeline.
+

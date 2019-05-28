@@ -91,7 +91,7 @@ The data must first be saved in a foramt that is compatible with the Java based 
 ARACNeTable(cpm.mat, 'tutorial/pbmc-cpm.tsv')
 ```
 
-TO DO: How to use ARACNe
+Consult the manual here on how to use ARACNe: https://github.com/califano-lab/ARACNe-AP/blob/master/README.md
 
 Finally, we convert the merged ARACNe results into a regulon object that can be used to infer protein activity with the VIPER algorithm:
 
@@ -138,6 +138,8 @@ r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.
 ### R2 Network Generation
 
 NOTE: As in the **R1 Network Generation** step, we have again included the ARACNe networks generated in this step within the tutorial. Once again, we encourage you to read and understand this section, but you can skip to the **R2 Clustering** section to continue with the analysis.
+
+The procedure for this step is the same as in **R1 Network Generation**, but must be repeated for each cluster generated in the **R1 Clustering** step. Once you have generated the network .tsv files, they can be processed into VIPER compatible interactome objects in the same manner as before:
 
 ```{r eval = FALSE}
 c1.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c1_finalNet.tsv', r1.clustMats[[1]], 

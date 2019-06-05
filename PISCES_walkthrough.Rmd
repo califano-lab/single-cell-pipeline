@@ -1,7 +1,7 @@
 ---
 title: "PISCES Walkthrough"
 author: "Lukas Vlahos, Pasquale Laise, Andrea Califano"
-correspondence to Pasquale Laise and Andrea Califano: "pl2959@cumc.columbia.edu; ac2248@cumc.columbia.edu"
+correspondence: Pasquale Laise (pl2959@cumc.columbia.edu) and Andrea Califano (ac2248@cumc.columbia.edu).
 output: html_document
 fig_align: 'center'
 ---

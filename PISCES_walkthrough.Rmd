@@ -94,13 +94,13 @@ For a detailed tutorial on how to use ARACNe-AP, consult the tutorial here: http
 By default PISCES generates a single ARACNe network from all the cells in the data set.
 This is a default approach that assumes no cells types are known in the data set. If the data set contains multiple cell types and these cell types are known and annotated in the data set (e.g. are experimentally defined  by FACs), you can generate cell-type specific networks. However, we recommend to proceed through the unsupervised approach even if cell types are known ( e.g. experimentally defined), as the unsupervised analysis can either confirm the experimental design and,  potentially, generate novel biological findings. 
 
-The data must first be saved in a foramt that is compatible with the Java based ARACNe-AP implementation included in this pipeline:
+The data must first be saved in a format that is compatible with the Java based ARACNe-AP implementation included in this pipeline:
 
 ```{r eval = FALSE}
 ARACNeTable(cpm.mat, 'tutorial/pbmc-cpm.tsv')
 ```
 
-ARACNe should be run once for each regulator set (TF, COTF, and Signaling proteins), and the reuslting .tsv files should be merged. These regulator files can be found in the */Modules/ARACNe/* directory for both mouse and human data. Once these .tsv's are generated, they should be merged, then combined with the original data to generate a regulon object that can be used to infer protein activity with the VIPER algorithm:
+ARACNe should be run for each regulator set (TFs, COTFs, and Signaling Proteins). The files containing the lists of the cnadiate master regulator proteins can be found in the */Modules/ARACNe/* directory for both mouse and human data. Once these .tsv's are generated, they should be merged, then combined with the original data to generate a regulon object that can be used to infer protein activity with the VIPER algorithm:
 
 ```{r eval = FALSE}
 RegProcess('tutorial/pbmc_r1-net-final.tsv', cpm.mat, out.dir = 'tutorial/', out.name = 'pbmc_r1-net-')
@@ -108,16 +108,18 @@ RegProcess('tutorial/pbmc_r1-net-final.tsv', cpm.mat, out.dir = 'tutorial/', out
 
 ### R1 Clustering
 
-With the network created, we will infer protein activity:
+Once the ARACNe network has been generated, we  can infer protein activity as following:
 
 ```{r eval = FALSE}
 r1.net <- readRDS('tutorial/pbmc_r1-net-pruned.rds')
 r1.pAct <- viper(rank.mat, r1.net, method = 'none')
 ```
 
-Optionally, at this step, you can combine the results of the single-cell analysis with those from metaVIPER using the GTEx interactomes. Any regulons not included in the single-cell network will be filled in with data contained in the GTEx interactomes. We suggest loading all the GTEx networks (included in the *GTEx-Nets* directory), but the following exmaple uses only three networks for brevity. Since the GTEx networks utilize Entrez IDs, some gene name conversion will also be necessary.
+Optionally, at this step, you can combine the results of the single-cell analysis with those from metaVIPER using precomputed GTEx interactomes. 
+The rationale here is to further improve the protein activity inference by applying the metaVIPER algorithm. Indeed, metaVPER will make use of GTEX networks to compute the protein activity for the proteins whose regulon (the set of regulatory target genes downstream to a given protein) is not inferred from single cell gene expression profiles.
+We suggest loading all the GTEx networks (included in the *GTEx-Nets* directory), but the following exmaple uses only three networks for brevity. Since the GTEx networks utilize Entrez IDs, some gene name conversion will also be necessary.
 
-**NOTE:** As stated, this is an optional (though recommended) step that can be skipped for purposes of this tutorial. Additionally, using all of the avaialble networks is very memory intensive, and will likely require cluster-architecture due to the RAM requirements. Finally, this step is not relevant for murine data, as we do not have a large bank of pre-computed, tissue specific networks for mouse.
+**NOTE:** As stated, this is an optional (though recommended) step that can be skipped for purposes of this tutorial. Additionally, using all of the avaialble networks is very computationally intensive, and will likely require a cluster-architecture due to the RAM requirements. GTEx networks can be applied only to human samples, this step is not relevant for murine data.
 
 ```{r eval = FALSE}
 rank.mat.entrez <- Ensemble2Entrez(rank.mat)
@@ -129,7 +131,7 @@ r1.gtex <- Entrez2Ensemble(r1.gtex)
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 
-With the first round of protein activity inferred, clustering analysis can be performed on the protein activity-based distance metrix using PAM. This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clustering, but other methods such as K-Means or louvain can be substituted:
+Once  protein activty has been computed, clustering analysis can be performed by the  PAM algorithm. This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clustering, but other methods such as K-Means or louvain can be applied:
 
 ```{r, fig.align = 'center'}
 r1.viperDist <- as.dist(viperSimilarity(r1.pAct))
@@ -140,11 +142,13 @@ ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line()
   ggtitle('R1 Clustering Silhouette Scores')
 ```
 
-This will generate a set of clusterings for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicate cluster quality. If you would like the code to automatically save a plot of the silhouette scores, usign the optional *plotPath* argument with the *SilScoreEval* function. For this example, the optimal clustering occured with *k=3*, but you should analyze your data and choose the clustering with the highest average silhouette score. A silhouette score of 0.25 or above is generalyl considered robust [4, 5].
+This will generate a set of clusters for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicates cluster quality. It is possible to automatically save a plot of the silhouette scores, usign the optional *plotPath* argument with the *SilScoreEval* function. For the test set used in this tutorial, the optimal number of  clusters is *k=3*. The optimal number of clusters can be defined for each data set looking at the silhouette score. A silhouette score of 0.25 or above is generalyl considered robust [4, 5].
 
-This clustering will now be used to split the data into into matrices for cluster-specific network generation. The goal here is to isolate broad cell-types and more accurately infer their regulatory architecture using ARACNe. Note that the goal is NOT to capture different ststes of the same cell type, which will share significant portions of their regulatory architecture.
 
-Additionally, at this step we will generate metaCells within each cluster. To do this, PISCES identifies the nearest neighbors based on the *viperSimilarity* distance function as a method of inferring more robust local expression profiles. This in turn will allow for more accurate network inference with ARACNe. All of these steps can be accomplished with the following command (if you are interested in running these steps seperately in your analysis, there are also stand alone commands for each):
+
+Additionally, in order to improve the quality of the newtorks  by increasing the number of ARACNe regulons, PISCES transforms single cell gene expression profiles into metacell profiles. 
+The PISCES meta-cell inference algorithm aims at overcoming the sparse nature of single cell data due to dropouts (inefficient mRNA capture). PISCES accomplishes this step by integrating the expression profiles of cluster of cells (KNN) with similar  protein activty profiles.  After metacell inference, a minimum of two-hundred randomly sampled metacells from each cell type are used to generate cell type specific networks.
+All of these steps can be accomplished with the following command (if you are interested in running these steps seperately in your analysis, there are also stand alone commands for each):
 
 ```{r eval = FALSE}
 r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.dir = 'tutorial', out.name = 'pbmc-r1-clusts')

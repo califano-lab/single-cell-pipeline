@@ -1,8 +1,8 @@
 ---
 title: "PISCES Walkthrough"
 authors: "Lukas Vlahos, Pasquale Laise, Andrea Califano"
-correspondence: "Pasquale Laise (pl2959@cumc.columbia.edu) and Andrea Califano (ac2248@cumc.columbia.edu)"
-
+correspondence: "Pasquale Laise  and Andrea Califano"
+contacts: lv2395@cumc.columbia.edu, pl2959@cumc.columbia.edu, ac2248@cumc.columbia.edu.
 output: html_document
 fig_align: 'center'
 ---
@@ -156,9 +156,10 @@ r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.
 
 ### R2 Network Generation
 
-**NOTE:** As in the **R1 Network Generation** step, we have again included the ARACNe networks generated in this step within the tutorial. Once again, we encourage you to read and understand this section, but you can skip to the **R2 Clustering** section to continue with the analysis.
+**NOTE:** NOTE: As in the **R1 Network Generation** step, we have  included the ARACNe networks generated in this step within the tutorial. 
 
-The procedure for this step is the same as in **R1 Network Generation**, but must be repeated for each cluster generated in the **R1 Clustering** step. Once you have generated the network .tsv files, they can be processed into VIPER compatible interactome objects in the same manner as before (as before, you don't need to run this step, and the .tsv's listed below are not included in this tutorial; the final networks can be directly imported):
+
+The procedure for this step is the same as in **R1 Network Generation**, but must be repeated for each cluster generated in the **R1 Clustering** step. 
 
 ```{r eval = FALSE}
 c1.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c1_finalNet.tsv', r1.clustMats[[1]], 
@@ -171,7 +172,8 @@ c3.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c3_finalNet.tsv', r1.clustMats[[3
 
 ### R2 Clustering
 
-With new, more granular networks, we will follow the same steps as in the **R1 Clustering** section. First, PISCES comptues a protein activity signature using the more accurate networks generated in the previous step. Optionally, you can again combine these results with those from the GTEx networks. 
+
+Cell types-specific  networks  are  then used to infer protein activity  as in the **R1 Clustering** section. Optionally, you can again combine these results with those from the GTEx networks. 
 
 ```{r eval = FALSE}
 # load in networks
@@ -182,7 +184,7 @@ c3.net <- readRDS('tutorial/r2-nets/pbmc-r2-c3_pruned.rds')
 r2.pAct <- viper(rank.mat, list('c1' = c1.net, 'c2' = c2.net, 'c3' = c3.net), method = 'none')
 ```
 
-Then, we will use this more accurate protein activity inference to generate a new clustering scheme:
+A new clustering analysis is performed based on protein activty inferred from cell type specific networks
 
 ```{r, fig.align = 'center'}
 # generate clusterings
@@ -193,23 +195,24 @@ plot.dat <- data.frame('k' = 2:15, 'Silhouette.Scores' = r2.clustSil)
 ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line() +
   ggtitle('R2 Clustering Silhouette Scores')
 ```
+In the final step, PISCES  computes a protein acitivity signature of each cluster of cells. In the test set used in this tutorial *k=2* is the optimal clustering, based on silhouette analysi. As stated previously, the the optimal number of clusters  should  defined for each data set data. As a pre-processing step, we convert from ENSG to gene names for ease of interpretation:
 
-With a robust clustering scheme generated, we can now identify the master regulators of these clusters. For this data, we select *k=2* as the optimal clustering based on silhouette score. As stated previously, you should identify the optimal clustering for your own data, and incorporate biological insights as well as cluster quality metrics. As a pre-processing step, we now convert from ENSG to gene names for ease of interpretation:
 
 ```{r}
 r2.pAct <- Ensemble2GeneName(r2.pAct)
 r2Clust.mrs <- GetMRs(r2.pAct, clustering = r2.clusts$k2$clustering, method = 'Stouffer', numMRs = 50, bottom = FALSE, weights = r2.clusts$k2$silinfo$widths[,3])
 ```
 
-### Visualization Methods
+### Visualization Schemes
 
-The best visualization method for data with this many dimensions is a heatmap. In particular, a heatmap of the cluster specific master regulators will show how the most significant proteins in the clustering differ between clusters. As a warning, if you're using RStudio, make sure that the R graphic window size is large enough to display the plot:
+We reccomend to visualize the  the differentially activated proteins in each cluster through a heatmap. Indeed, a heatmap can provide a easy visualization of the  differential activty of cluster specific master regulators across all the cells:
 
 ```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
 ClusterHeatmap(r2.pAct[ MR_UnWrap(r2Clust.mrs) , ], clust = r2.clusts$k2$clustering, plotTitle = 'R2 Clustering: k = 2')
 ```
 
-While 2D visualization does not present as much information as a heatmap showing all proteins, it is a more inuitive format in which to present data, particularly for traditional biologists. UMAP is used to perform a dimensionality reduction, using the master regulators as features to highlight the most important biological signal:
+In addition to the heatmap, a uniform manifold approximation and projection (UMAP) can be used  to perform a dimensionality reduction and visualization.
+By default, PISCES generate a UMAP using the most representative proteins of each cells. The most representative proteins are defined as the "union" of top active proteins selected on cell by cell basis.
 
 ```{r, fig.align = 'center'}
 dat.umap <- cbcMR_UMAP(r2.pAct)
@@ -218,16 +221,17 @@ ClusterUMAP(r2.clusts$k2$clustering, dat.umap, 'R2 Clustering: k = 2')
 
 ### Iterative Clustering
 
-Many single-cell data sets will contain a wide variety of populations that are not equidistant. For instance, it will be much easier to separate epithelial cells and T-Cells then it will be to seperate CD4 and CD8 populations of T-Cells. To handle this challenge, we provide an iterative clustering protocal, that will analyze clusters separate from the rest of the data to look for more granular populations.
+In many cases, the first PAM clustering analysis identifies only large clusters of cells which, in turns, can be constitute by subclusters of biological relevance.  
+To identify these subcluster if cells we implemented the "IterPAM" function. This functon will perform an iterative clustering analysis untill the silhouette score is higher of given treshold. By default  the treshold on the sihouette score is 0.25, based on the interpretation of  REFs... 
 
-The parameters for this function will need to change based on your specific data. If your data has many subpopultions, more iterations may be necessary. If you'd like to allow less robust clusters, the silhouette threshold can be lowered. Different distance functions can also be used, though we recommend the method below if you plan to use protein activity data:
+We reccommen to set the parameters of this function according to your data set. If your data has many subpopulations, more iterations may be necessary. If you'd like to allow less robust clusters, the silhouette threshold can be lowered. Different distance functions can also be used, though we recommend the method below if you plan to use protein activity data:
 
 ```{r}
 dist.func <- function(x) { as.dist(viperSimilarity(x)) }
 r2.iClust <- IterPAM(r2.pAct, dist.func)
 ```
 
-We can visualize this clustering in a similar way to the **R2 Clustering**, but with a more detailed annotation that highlights the iterative clustering procedure:
+We can visualize the clusters as in  **R2 Clustering**, but with a more detailed annotation about the iterative clustering procedure (annotation of the subclusters):
 
 ```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
 iClust.mrs <- GetMRs(r2.pAct, clustering = r2.iClust$clustering[,5], method = 'Stouffer', numMRs = 50, bottom = FALSE)
@@ -247,7 +251,10 @@ ClusterUMAP(r2.iClust$clustering[,5], dat.umap, 'R2 IterClust: i = 5')
 
 ### Superimposing Markers
 
-The clusters generated by this pipeline are totally unbiased by any canonical markers of cell type. However, superimposing such markers on the clusters generated using protein activity can offer insight as to the classificaiton of cell types, and inform your conclusions or future analysis. Below, we have generated plots of the activity of several canonical markers typically used to separate PBMC's in gene expression space:
+The clusters generated by this pipeline are  totally unsupervised. However, the user can  superimpose a set of specific markers for clustering analysis. 
+These clusters will provide specific information about the activity of these markers across all the cells.
+ 
+ will be informative Below, we have generated plots of the activity of several canonical markers typically used to separate PBMC's in gene expression space:
 
 ```{r, fig.height = 7, fig.width = 15, fig.align = 'center'}
 clust <- r2.iClust$clustering[,2]
@@ -286,6 +293,7 @@ FCGR3A <- ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(colour = FCGR3A))
 marker.plot <- ggarrange(clusters, CCR7, CD8A, MS4A1, PPBP, MS4A7, IL7R, CD14, FCER1A, FCGR3A, ncol = 5, nrow = 2)
 print(annotate_figure(marker.plot, top = text_grob('R2 Iterclust (i = 2) w/ Canonical PBMC Markers', size = 24)))
 ```
+
 
 ### References
 

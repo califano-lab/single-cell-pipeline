@@ -1,7 +1,8 @@
 ---
 title: "PISCES Walkthrough"
-author: "Lukas Vlahos, Pasquale Laise, Andrea Califano"
+authors: "Lukas Vlahos, Pasquale Laise, Andrea Califano"
 correspondence: "Pasquale Laise (pl2959@cumc.columbia.edu) and Andrea Califano (ac2248@cumc.columbia.edu)"
+
 output: html_document
 fig_align: 'center'
 ---
@@ -14,7 +15,7 @@ PISCES transforms highly variable and noisy single cell gene expression profiles
 
 Briefly, the ARACNe  algorithm is  one of the most widely used methods for inferring transcriptional interactions from gene expression data. The VIPER algorithm uses the expression of the ARACNe-inferred regulatory targets of a given protein, such as the targets of a transcription factor (TF), as an accurate reporter of its activity. Typically, PISCES  can accurately assess the activity of up to 6000 regulatory proteins  from single cell gene expression profiles,  significantly increasing the ability to analyze the biological function and relevance of gene products whose mRNAs are undetectable in individual cells (e.g. dropout effect).
 
-As currently designed, this pipeline requires a moderate level of comptuer science know-how. Access to cluster architecture is also advised, as computing networks on a single-core is very time consuming.
+As currently designed, this pipeline requires a moderate level of computer science know-how. Access to cluster architecture is also advised, as computing networks on a single-core is  time consuming.
 
 ### Setup
 
@@ -64,7 +65,7 @@ colnames(raw.mat) <- barcodes[,1]
 rownames(raw.mat) <- genes[,1]
 ```
 
-Additionally, we recommend saving intermediate data at each step, since many of these steps will take a decent amount of time with an average sized single cell data set. These saving steps are not including in this walkthrough, but can be achieved with the saveRDS function in R.
+We recommend saving intermediate data at each step, since many of these steps will take a considerable amount of time with an average sized single cell data set. These saving steps are not including in this walkthrough, but can be achieved with the saveRDS function in R.
 
 ### PreProcessing
 
@@ -74,7 +75,7 @@ First, we perform some cursory QC on the data to check the distribution of read 
 QCPlots(raw.mat)
 ```
 
-This QC analysis should inform subsequent filtration steps. By default, we remove any genes with no coutns, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature using a double rank transformation.
+By default, we remove any genes with no coutns, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature
 
 ```{r}
 filt.mat <- QCTransform(raw.mat)
@@ -82,7 +83,7 @@ cpm.mat <- CPMTransform(filt.mat)
 rank.mat <- RankTransform(cpm.mat)
 ```
 
-By default gene expression signature is generated using a "double rank" approach, which uses the median gene expression of the data set as an internal reference for normalization.
+By default gene expression signature is generated using a "double rank" approach, which uses the median gene expression of the data set as an internal reference to compute a gene expression signature on a cell by cell basis.
 
 ### R1 Network Generation
 
@@ -90,9 +91,8 @@ By default gene expression signature is generated using a "double rank" approach
 
 For a detailed tutorial on how to use ARACNe-AP, consult the tutorial here: https://github.com/califano-lab/ARACNe-AP/blob/master/README.md
 
-In this first round of network generation, the entire data set is used to make a general network. If the dataset is very homogeneous (ie one cell type), then this network will be a good representation of the underlying regulatory structure of the data. If instead the data are heterogeneous an contain multiple subtypes, this network will not be represntative of true biology, but will still be useful for an initial round of clustering. 
-
-This is a default approach that assumes your data has no experimental (ie FACS sorted) labels. If cell types are experimentally defines, you can skip directly to generating cell-type specific networks, which would normally be performed in the **R2 Network Generation** step. However, we recommend that even if your data have experimentally defined labels, you still proceed through the analysis in an unbiased manner, as this approach is more likely to generate novel biological findings. 
+By default PISCES generates a single ARACNe network from all the cells in the data set.
+This is a default approach that assumes no cells types are known in the data set. If the data set contains multiple cell types and these cell types are known and annotated in the data set (e.g. are experimentally defined  by FACs), you can generate cell-type specific networks. However, we recommend to proceed through the unsupervised approach even if cell types are known ( e.g. experimentally defined), as the unsupervised analysis can either confirm the experimental design and,  potentially, generate novel biological findings. 
 
 The data must first be saved in a foramt that is compatible with the Java based ARACNe-AP implementation included in this pipeline:
 

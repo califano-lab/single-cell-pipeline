@@ -73,7 +73,7 @@ First, we perform some cursory QC on the data to check the distribution of read 
 QCPlots(raw.mat)
 ```
 
-This QC analysis should inform subsequent filtration steps. By default, we remove any genes with no coutns, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature using a double rank transformation.
+This QC analysis should inform subsequent filtration steps. By default, we remove any genes with no counts, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function based on your data. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature using a double rank transformation.
 
 ```{r}
 filt.mat <- QCTransform(raw.mat)
@@ -85,13 +85,11 @@ By default gene expression signature is generated using a "double rank" approach
 
 ### R1 Network Generation
 
-**NOTE:** Because ARACNe takes a considerable amount of time to run, we recommend setting up a cluster-based implementation. For ease-of-use in this tutorial, we have included the networks generated in this analysis within the tutorial, so that you do not need to generate them yourself. We encourage you to still read an understand this section, but you can also skip directly to **R1 Clustering**.
+**NOTE:** Because ARACNe takes a considerable amount of time to run, we recommend setting up a cluster-based implementation. For ease-of-use in this tutorial, we have included the networks generated in this analysis within the tutorial, so that you do not need to generate them yourself. We encourage you to still read and understand this section, but you can also skip directly to **R1 Clustering**.
 
-For a detailed tutorial on how to use ARACNe-AP, consult the tutorial here: https://github.com/califano-lab/ARACNe-AP/blob/master/README.md
+For a detailed tutorial on how to use ARACNe-AP, consult the github here: https://github.com/califano-lab/ARACNe-AP/blob/master/README.md
 
-In this first round of network generation, the entire data set is used to make a general network. If the dataset is very homogeneous (ie one cell type), then this network will be a good representation of the underlying regulatory structure of the data. If instead the data are heterogeneous an contain multiple subtypes, this network will not be represntative of true biology, but will still be useful for an initial round of clustering. 
-
-This is a default approach that assumes your data has no experimental (ie FACS sorted) labels. If cell types are experimentally defines, you can skip directly to generating cell-type specific networks, which would normally be performed in the **R2 Network Generation** step. However, we recommend that even if your data have experimentally defined labels, you still proceed through the analysis in an unbiased manner, as this approach is more likely to generate novel biological findings. 
+The default PISCES approach assumes that there are no known cell type labels in the data set. PISCES will generate an ARACNe network from all the cells that will not capture cell type specific regulatory structure but will be able to separate broad cell populations. If the data set contains multiple labeled cell types (e.g. are experimentally defined by FACs), you can generate cell-type specific networks. However, we recommend proceeding in an unsupervised manner, as the unsupervised analysis can either confirm the experimental design and, potentially, generate novel biological findings.
 
 The data must first be saved in a foramt that is compatible with the Java based ARACNe-AP implementation included in this pipeline:
 
@@ -128,7 +126,7 @@ r1.gtex <- Entrez2Ensemble(r1.gtex)
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 
-With the first round of protein activity inferred, clustering analysis can be performed on the protein activity-based distance metrix using PAM. This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clustering, but other methods such as K-Means or louvain can be substituted:
+With the first round of protein activity inferred, clustering analysis can be performed on the protein activity-based distance metrix. This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clustering, but other methods such as K-Means or louvain (not implemented in this pipeline) can be substituted:
 
 ```{r, fig.align = 'center'}
 r1.viperDist <- as.dist(viperSimilarity(r1.pAct))
@@ -139,11 +137,11 @@ ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line()
   ggtitle('R1 Clustering Silhouette Scores')
 ```
 
-This will generate a set of clusterings for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicate cluster quality. If you would like the code to automatically save a plot of the silhouette scores, usign the optional *plotPath* argument with the *SilScoreEval* function. For this example, the optimal clustering occured with *k=3*, but you should analyze your data and choose the clustering with the highest average silhouette score. A silhouette score of 0.25 or above is generalyl considered robust [4, 5].
+This will generate a set of clusterings for values of *k* between 2 and 5, then generate a vector of average silhouette scores that indicate cluster quality. A plot of the silhouette scores can be automatically saved by using the optional *plotPath* argument with the *SilScoreEval* function. For this example, the optimal clustering occured with *k=3*, but you should analyze your data and choose the clustering with the highest average silhouette score. A silhouette score of 0.25 or above is generalyl considered robust [4, 5].
 
 This clustering will now be used to split the data into into matrices for cluster-specific network generation. The goal here is to isolate broad cell-types and more accurately infer their regulatory architecture using ARACNe. Note that the goal is NOT to capture different ststes of the same cell type, which will share significant portions of their regulatory architecture.
 
-Additionally, at this step we will generate metaCells within each cluster. To do this, PISCES identifies the nearest neighbors based on the *viperSimilarity* distance function as a method of inferring more robust local expression profiles. This in turn will allow for more accurate network inference with ARACNe. All of these steps can be accomplished with the following command (if you are interested in running these steps seperately in your analysis, there are also stand alone commands for each):
+Additionally, in order to improve the quality of the ARACNe networks, PISCES transforms single cell gene expression profiles into metacell profiles. The PISCES meta-cell inference algorithm aims at overcoming the sparse nature of single cell data due to dropouts (inefficient mRNA capture) by integrating the expression profiles of local cell clusters that have similar protein activity profiles. This is accomplished by generating a K-nearest neighbor (KNN) graph based on the *viperSimilarity* distance method, then summing neighborhoods of ten cells. Metacells generated within each cluster are subset to 200 to avoid significant overlap. All of these steps can be accomplished with the following command (if you are interested in running these steps seperately in your analysis, there are also stand alone commands for each):
 
 ```{r eval = FALSE}
 r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.dir = 'tutorial', out.name = 'pbmc-r1-clusts')
@@ -166,7 +164,7 @@ c3.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c3_finalNet.tsv', r1.clustMats[[3
 
 ### R2 Clustering
 
-With new, more granular networks, we will follow the same steps as in the **R1 Clustering** section. First, PISCES comptues a protein activity signature using the more accurate networks generated in the previous step. Optionally, you can again combine these results with those from the GTEx networks. 
+The cell-type specific networks can now be used to infer a more robust protein activity profile and clustering scheme. The procedure is the same as the **R1 Clustering** step; a protein activity profile is inferred with VIPER, then clusters are identified using *viperSimilarity* adn *PAM*:
 
 ```{r eval = FALSE}
 # load in networks
@@ -176,8 +174,6 @@ c3.net <- readRDS('tutorial/r2-nets/pbmc-r2-c3_pruned.rds')
 # infer protein activity
 r2.pAct <- viper(rank.mat, list('c1' = c1.net, 'c2' = c2.net, 'c3' = c3.net), method = 'none')
 ```
-
-Then, we will use this more accurate protein activity inference to generate a new clustering scheme:
 
 ```{r, fig.align = 'center'}
 # generate clusterings
@@ -189,7 +185,7 @@ ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line()
   ggtitle('R2 Clustering Silhouette Scores')
 ```
 
-With a robust clustering scheme generated, we can now identify the master regulators of these clusters. For this data, we select *k=2* as the optimal clustering based on silhouette score. As stated previously, you should identify the optimal clustering for your own data, and incorporate biological insights as well as cluster quality metrics. As a pre-processing step, we now convert from ENSG to gene names for ease of interpretation:
+These clusters will be used for downstream biological analysis. As a pre-processing step, we convert from ENSG to gene names for ease of interpretation:
 
 ```{r}
 r2.pAct <- Ensemble2GeneName(r2.pAct)
@@ -198,13 +194,13 @@ r2Clust.mrs <- GetMRs(r2.pAct, clustering = r2.clusts$k2$clustering, method = 'S
 
 ### Visualization Methods
 
-The best visualization method for data with this many dimensions is a heatmap. In particular, a heatmap of the cluster specific master regulators will show how the most significant proteins in the clustering differ between clusters. As a warning, if you're using RStudio, make sure that the R graphic window size is large enough to display the plot:
+Because protein activity data is very high-dimensional (2000+), we recommend visualization using a heatmap. In particular, a heatmap of the cluster specific master regulators will show how the most significant proteins in the clustering differ between clusters. As a warning, if you're using RStudio, make sure that the R graphic window size is large enough to display the plot:
 
 ```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
 ClusterHeatmap(r2.pAct[ MR_UnWrap(r2Clust.mrs) , ], clust = r2.clusts$k2$clustering, plotTitle = 'R2 Clustering: k = 2')
 ```
 
-While 2D visualization does not present as much information as a heatmap showing all proteins, it is a more inuitive format in which to present data, particularly for traditional biologists. UMAP is used to perform a dimensionality reduction, using the master regulators as features to highlight the most important biological signal:
+While 2D visualization does not present as much information as a heatmap showing all proteins, it is a more inuitive format in which to present data, particularly for traditional biologists. UMAP is used to perform a dimensionality reduction, first by filtering the data to look at the most important master regulators on a cell-specific basis, then using these features as input to the UMAP algorithm:
 
 ```{r, fig.align = 'center'}
 dat.umap <- cbcMR_UMAP(r2.pAct)
@@ -213,16 +209,16 @@ ClusterUMAP(r2.clusts$k2$clustering, dat.umap, 'R2 Clustering: k = 2')
 
 ### Iterative Clustering
 
-Many single-cell data sets will contain a wide variety of populations that are not equidistant. For instance, it will be much easier to separate epithelial cells and T-Cells then it will be to seperate CD4 and CD8 populations of T-Cells. To handle this challenge, we provide an iterative clustering protocal, that will analyze clusters separate from the rest of the data to look for more granular populations.
+Many single-cell data sets will contain a wide variety of populations that are not equidistant. For instance, it will be much easier to separate epithelial cells and T-Cells then it will be to seperate CD4 and CD8 populations of T-Cells. Because of this, the first iteration of PAM will often contain large clusters of cells that are actually a combination of two smaller but distinct populations.
 
-The parameters for this function will need to change based on your specific data. If your data has many subpopultions, more iterations may be necessary. If you'd like to allow less robust clusters, the silhouette threshold can be lowered. Different distance functions can also be used, though we recommend the method below if you plan to use protein activity data:
+To identify these biologically relevant subclusters, we have implemented the *IterPAM* function. This function will perform an iterative clustering analysis, identifying subclusters that pass a given silhouette score threshold (0.25 by default). The parameters of this function will need to be tuned to your dataset - for instance, a more heterogeneous data set will require more iterations to reveal all subclusters, which ca be changed with the *iter.max* parameter. Different distance funtionc an also be used, though we recommend the method below if you plan to use protein activity data:
 
 ```{r}
 dist.func <- function(x) { as.dist(viperSimilarity(x)) }
 r2.iClust <- IterPAM(r2.pAct, dist.func)
 ```
 
-We can visualize this clustering in a similar way to the **R2 Clustering**, but with a more detailed annotation that highlights the iterative clustering procedure:
+We can visualize this clustering in a similar way to the **R2 Clustering**, but with a more detailed annotation that highlights the iterative clustering procedure (annotation of the subclusters):
 
 ```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}
 iClust.mrs <- GetMRs(r2.pAct, clustering = r2.iClust$clustering[,5], method = 'Stouffer', numMRs = 50, bottom = FALSE)
@@ -242,7 +238,7 @@ ClusterUMAP(r2.iClust$clustering[,5], dat.umap, 'R2 IterClust: i = 5')
 
 ### Superimposing Markers
 
-The clusters generated by this pipeline are totally unbiased by any canonical markers of cell type. However, superimposing such markers on the clusters generated using protein activity can offer insight as to the classificaiton of cell types, and inform your conclusions or future analysis. Below, we have generated plots of the activity of several canonical markers typically used to separate PBMC's in gene expression space:
+The clusters generated by this pipeline are totally unsupervised. However, the user can superimpose a set of specific markers for clustering analysis. These clusters will provide specific information about the activity of these markers across all the cells:
 
 ```{r, fig.height = 7, fig.width = 15, fig.align = 'center'}
 clust <- r2.iClust$clustering[,2]
@@ -284,21 +280,15 @@ print(annotate_figure(marker.plot, top = text_grob('R2 Iterclust (i = 2) w/ Cano
 
 ### References
 
-1.	Lachmann, A., et al., *ARACNe-AP: gene network reverse engineering through adaptive partitioning inference of mutual information*. Bioinformatics, 2016. 32(14): p. 2233-5.
-
-2.	Califano, H.D.a.A., *iterClust: Iterative Clustering*. R package version 1.4.0. 2018: https://github.com/hd2326/iterClust.
-
-3.	Ding, H., et al., *Quantitative assessment of protein activity in orphan tissues and single cells using the metaVIPER algorithm*. Nat Commun, 2018. 9(1): p. 1471.
-
-4.  Rosseeuw, P.J., *Journal of Computational and Applied Mathematics* 20 (1987) 53-65
-
+1.	Lachmann, A., et al., *ARACNe-AP: gene network reverse engineering through adaptive partitioning inference of mutual information*. Bioinformatics, 2016. 32(14): p. 2233-5.  
+2.	Califano, H.D.a.A., *iterClust: Iterative Clustering*. R package version 1.4.0. 2018: https://github.com/hd2326/iterClust.  
+3.	Ding, H., et al., *Quantitative assessment of protein activity in orphan tissues and single cells using the metaVIPER algorithm*. Nat Commun, 2018. 9(1): p. 1471.  
+4.  Rosseeuw, P.J., *Journal of Computational and Applied Mathematics* 20 (1987) 53-65  
 5.  Izenman, A.J., *Modern Multivariate Statistical Techniques. Regression, Classification, and Manifold Learning*. Springer text in statistics, 2008 (Chapter 12)
 
 #### Acknowledgements
 
-Jeremy Dooley - for his advice and expertise in single cell sequencing experiments.
-
-Hongxu Ding - whose work in the Califano laid the groundwork for the development of this pipeline.
-
+Jeremy Dooley - for his advice and expertise in single cell sequencing experiments.  
+Hongxu Ding - whose work in the Califano laid the groundwork for the development of this pipeline.  
 Evan Paull - for help with software and tutorial development and testing.
 

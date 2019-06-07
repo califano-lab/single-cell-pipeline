@@ -1,4 +1,4 @@
-# The pipeline for Protein Activity Inference in Single Cells (PISCES)
+# The pipeline for Protein activity Inference in Single CEllS (PISCES)
 ---
 Authors: Lukas Vlahos, Pasquale Laise, Andrea Califano
 

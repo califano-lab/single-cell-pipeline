@@ -66,7 +66,7 @@ Ensemble2GeneName<-function(dat.mat) {
   # packages
   require(biomaRt)
   # get the mart
-  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
   name.map <- getBM(attributes=c('hgnc_symbol','hgnc_id','ensembl_gene_id'), 
                        filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
   rownames(name.map) <- make.unique(name.map$ensembl_gene_id)

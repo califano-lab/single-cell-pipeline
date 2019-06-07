@@ -112,17 +112,12 @@ r1.net <- readRDS('tutorial/pbmc_r1-net-pruned.rds')
 r1.pAct <- viper(rank.mat, r1.net, method = 'none')
 ```
 
-Optionally, at this step, you can combine the results of the single-cell analysis with those from metaVIPER using the GTEx interactomes. Any regulons not included in the single-cell network will be filled in with data contained in the GTEx interactomes. We suggest loading all the GTEx networks (included in the *GTEx-Nets* directory), but the following exmaple uses only three networks for brevity. Since the GTEx networks utilize Entrez IDs, some gene name conversion will also be necessary.
+Single-cell ARACNe networks usually contain fewer regulons than those generated from bulk data due to data sparsity, and the number of regulators for which VIPER can infer protein activity is therefore lower. To counteract this, ARACNe networks generated from tissue-specific bulk samples available in the GTEx database are provided for additional inference. In this optional step, the most appropriate GTEx networks will be selected for your data, and metaVIPER will be performed using those networks. Then, any regulators for which activity can be inferred from the bulk networks but not from the single-cell networks will be incoporated into the *r1.pAct* object. This will allow for a more complete interpretation of the data in downstream analyses.
 
-**NOTE:** As stated, this is an optional (though recommended) step that can be skipped for purposes of this tutorial. Additionally, using all of the avaialble networks is very memory intensive, and will likely require cluster-architecture due to the RAM requirements. Finally, this step is not relevant for murine data, as we do not have a large bank of pre-computed, tissue specific networks for mouse.
+**NOTE:** for the purposes of this pipeline, this is an optional step that you do not have to run. Because this step is generating VIPER matrices from more than 30 networks, it will take a considerable amount of time and memory to run. We recommend running this step on a cluster system with 32GB of memory or more allocated for any data set with 1000 or more cells. Finally, this step is not relevant for murine data, as the GTEx networks are generated from human RNAseq.
 
 ```{r eval = FALSE}
-rank.mat.entrez <- Ensemble2Entrez(rank.mat)
-lung.net <- get(load('GTEx-Nets/Lung_clean_vst_6cols.rda'))
-liver.net <- get(load('GTEx-Nets/Liver_clean_vst_6cols.rda'))
-muscle.net <- get(load('GTEx-Nets/Muscle_clean_vst_6cols.rda'))
-r1.gtex <- viper(rank.mat.entrez, c(lung.net, liver.net, muscle.net), method = 'none')
-r1.gtex <- Entrez2Ensemble(r1.gtex)
+r1.gtex <- GTExVIPER(r1.gtex, 'GTEx-Nets/')
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 

@@ -77,6 +77,42 @@ Ensemble2GeneName<-function(dat.mat) {
   return(as.matrix(convert.dat))
 }
 
+#' Transforms gene names from Ensembl to Entrez
+#' 
+#' @param dat.mat Matrix of data with ENSEMBL names (genes X samples).
+#' @return Data with Entrez names. Some data will likely be lost in the conversion.
+Ensemble2Entrez <- function(dat.mat) {
+  # packages
+  require(biomaRt)
+  # get the mart
+  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
+                    filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
+  # remove rows with no match for entrez, then match and replace
+  name.map <- name.map[ which(!is.na(name.map$entrezgene)) , ]
+  convert.dat <- dat.mat[ name.map$ensembl_gene_id , ]
+  rownames(convert.dat) <- name.map$entrezgene
+  return(convert.dat)
+}
+
+#' Transforms gene names from Entrez to Ensembl
+#' 
+#' @param dat.mat Matrix of data with Entrez names (genes X samples).
+#' @return Data with Ensembl names. Some data will likely be lost in the conversion.
+Entrez2Ensemble <- function(dat.mat) {
+  # packages
+  require(biomaRt)
+  # get the mart
+  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
+                    filters = 'entrezgene', values = (rownames(dat.mat)), mart = ensembl)
+  # remove rows with no match for entrez, then match and replace
+  name.map <- name.map[ which(!is.na(name.map$ensembl_gene_id)) , ]
+  convert.dat <- dat.mat[ as.character( name.map$entrezgene ) , ]
+  rownames(convert.dat) <- name.map$ensembl_gene_id
+  return(convert.dat)
+}
+
 #' Saves a matrix in a format for input to ARACNe
 #'
 #' @param dat.mat Matrix of data (genes X samples).

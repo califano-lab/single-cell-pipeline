@@ -21,7 +21,7 @@ As currently designed, this pipeline requires a moderate level of computer scien
 
 To run this pipeline, you'll need to have the following packages installed:
 
-* viper
+* viper (newest version available)
 * cluster
 * ggplot2
 * ggpubr

@@ -146,7 +146,7 @@ cbcMR_UMAP <- function(dat.mat, num.mrs = 50) {
   cbc.mrs <- apply(dat.mat, 2, function(x) { names(sort(x, decreasing = TRUE))[1:num.mrs] })
   cbc.mrs <- unique(unlist(as.list(cbc.mrs)))
   # generate and return UMAP
-  cbc.umap <- umap(t(dat.mat[ match(cbc.mrs, rownames(dat.mat)) , ]), config = umap_custom)
+  cbc.umap <- umap(t(dat.mat[ match(cbc.mrs, rownames(dat.mat)) , ]), config = umap_custom, init = "random")
   return(cbc.umap)
 }
 

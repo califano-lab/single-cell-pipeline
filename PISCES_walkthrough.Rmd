@@ -99,7 +99,7 @@ The data must first be saved in a foramt that is compatible with the Java based 
 ARACNeTable(cpm.mat, 'tutorial/pbmc-cpm.tsv')
 ```
 
-ARACNe should be run for each regulator set (TFs, COTFs, and Signaling Proteins). The files containing the lists of the cnadiate master regulator proteins can be found in the */Modules/ARACNe/* directory for both mouse and human data. Once these .tsv's are generated, they should be merged, then combined with the original data to generate a regulon object that can be used to infer protein activity with the VIPER algorithm:
+ARACNe should be run for each regulator set (TFs, COTFs, and Signaling Proteins). The files containing the lists of the candidate master regulator proteins can be found in the */Modules/ARACNe/* directory for both mouse and human data. Once ARACNe has generated .tsv's for each of these regulator sets, the .tsv's should be merged, which can be done through the command line. Finally, the merged .tsv's can be combined with the original data to create a VIPER compatible network with the following command:
 
 ```{r eval = FALSE}
 RegProcess('tutorial/pbmc_r1-net-final.tsv', cpm.mat, out.dir = 'tutorial/', out.name = 'pbmc_r1-net-')
@@ -164,9 +164,9 @@ The cell-type specific networks can now be used to infer a more robust protein a
 
 ```{r eval = FALSE}
 # load in networks
-c1.net <- readRDS('tutorial/r2-nets/pbmc-r2-c1_pruned.rds')
-c2.net <- readRDS('tutorial/r2-nets/pbmc-r2-c2_pruned.rds')
-c3.net <- readRDS('tutorial/r2-nets/pbmc-r2-c3_pruned.rds')
+c1.net <- readRDS('tutorial/pbmc-r2-c1_pruned.rds')
+c2.net <- readRDS('tutorial/pbmc-r2-c2_pruned.rds')
+c3.net <- readRDS('tutorial/pbmc-r2-c3_pruned.rds')
 # infer protein activity
 r2.pAct <- viper(rank.mat, list('c1' = c1.net, 'c2' = c2.net, 'c3' = c3.net), method = 'none')
 ```
@@ -181,7 +181,7 @@ ggplot(plot.dat, aes(x = k, y = Silhouette.Scores)) + geom_point() + geom_line()
   ggtitle('R2 Clustering Silhouette Scores')
 ```
 
-In the final step, PISCES  computes a protein acitivity signature of each cluster of cells. In the data set used in this tutorialx *k=2* is the optimal clustering based on the silhouette score, but, as before, each data set will be different. As a pre-processing step, we convert form ENSG to gene names for ease of interpretation in downstream biological analyses:
+In the final step, PISCES computes a protein acitivity signature of each cluster of cells. In the data set used in this tutorialx *k=2* is the optimal clustering based on the silhouette score, but, as before, each data set will be different. As a pre-processing step, we convert form ENSG to gene names for ease of interpretation in downstream biological analyses:
 
 ```{r}
 r2.pAct <- Ensemble2GeneName(r2.pAct)
@@ -214,7 +214,6 @@ dist.func <- function(x) { as.dist(viperSimilarity(x)) }
 r2.iClust <- IterPAM(r2.pAct, dist.func)
 ```
 
-<<<<<<< HEAD
 We can visualize this clusteringas in **R2 Clustering**, but with a more detailed annotation that highlights the iterative clustering procedure (annotation of the subclusters):
 
 ```{r, fig.height = 8, fig.width = 6, fig.align = 'center'}

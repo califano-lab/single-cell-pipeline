@@ -113,7 +113,7 @@ MakeCMfA <- function(dat.mat, dist.mat, numNeighbors = 5, clustering, subSize = 
     meta.mat <- MetaCells(mat, dist.mat, numNeighbors, subSize)
     meta.mat <- CPMTransform(meta.mat)
     file.name <- paste(out.dir, out.name, '_clust-', i, '-metaCells.tsv', sep = '')
-    ARACNeTable(meta.mat, file.name)
+    ARACNeTable(meta.mat, file.name, subset = FALSE)
     meta.mats[[i]] <- meta.mat
   }
   return(meta.mats)
@@ -149,10 +149,13 @@ MetaCells <- function(dat.mat, dist.mat, numNeighbors = 10, subSize) {
     neighbor.mat <- dat.mat[,c(i, knn.neighbors[i,])]
     imp.mat[,i] <- rowSums(neighbor.mat)
   }
+  # subset if requested and return
   if (missing(subSize)) {
     return(imp.mat)
+  } else if (subSize > ncol(imp.mat)) {
+    return(imp.mat)
   } else {
-    return(imp.mat[, sample(colnames(imp.mat), min(subSize, ncol(imp.mat)))])
+    return(imp.mat[, sample(colnames(imp.mat), subSize) ])
   }
 }
 

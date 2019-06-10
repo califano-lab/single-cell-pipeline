@@ -121,7 +121,7 @@ Entrez2Ensemble <- function(dat.mat) {
 ARACNeTable <- function(dat.mat, out.file, subset = TRUE) {
   dat.mat <- dat.mat[!duplicated(rownames(dat.mat)), ]
   if (subset) {
-    dat.mat <- dat.mat[, sample(colnames(dat.mat), 500) ]
+    dat.mat <- dat.mat[, sample(colnames(dat.mat), min(ncol(dat.mat), 500)) ]
   }
   sample.names <- colnames(dat.mat)
   gene.ids <- rownames(dat.mat)

@@ -15,7 +15,7 @@ Contacts:
 
 The pipeline for Protein Activity Inference in Single Cells (PISCES) is a regulatory-network-based methdology for the analysis of single cell gene expression profiles.
 
-PISCES transforms highly variable and noisy single cell gene expression profiles into robust and reproducible protein activity profiles. PISCES is centered around two key algorimthms: the Algorithm for the Reconstruction of Accurate Cellular Networks ARACNe [1]; and the algorithm for  Virtual Inference of Protein-activity by Enriched Regulon analysis (VIPER/metaVIPER) [2,3].
+PISCES transforms highly variable and noisy single cell gene expression profiles into robust and reproducible protein activity profiles. PISCES is centered around two key algorithms: the Algorithm for the Reconstruction of Accurate Cellular Networks ARACNe [1]; and the algorithm for  Virtual Inference of Protein-activity by Enriched Regulon analysis (VIPER/metaVIPER) [2,3].
 
 Briefly, the ARACNe  algorithm is  one of the most widely used methods for inferring transcriptional interactions from gene expression data. The VIPER algorithm uses the expression of the ARACNe-inferred regulatory targets of a given protein, such as the targets of a transcription factor (TF), as an accurate reporter of its activity. Typically, PISCES  can accurately assess the activity of up to 6000 regulatory proteins  from single cell gene expression profiles,  significantly increasing the ability to analyze the biological function and relevance of gene products whose mRNAs are undetectable in individual cells (e.g. dropout effect).
 
@@ -42,7 +42,7 @@ r1.pAct <- readRDS('tutorial/pbmc_r1-pAct.rds')
 r2.pAct <- readRDS('tutorial/pbmc_r2-pAct.rds')
 ```
 
-**NOTE:** This walkthrough  assumes that the working directoy to a folder containing the PISCES repo is set. All the  data will be saved in the same directory. This is not recommended for practical use, and can be changed by specifying full paths when loading or saving in your own applications. 
+**NOTE:** This walkthrough assumes that the working directoy to a folder containing the PISCES repo is set. All the  data will be saved in the same directory. This is not recommended for practical use, and can be changed by specifying full paths when loading or saving in your own applications. 
 
 Load PISCES functions and est data. Note that this pipeline uses ENSMBL Gene IDs by default:
 
@@ -58,7 +58,7 @@ library(RColorBrewer)
 raw.mat <- readRDS('tutorial/pbmc.rds')
 ```
 
-N.B.  If your data are in 10x format, you can load your data as the following (you don't need to run this for the purpose of the tutorial):
+N.B.  If  data are in 10x format, you can load your data as the following (you don't need to run this for the purpose of the tutorial):
 
 ```{r eval = FALSE}
 library(Matrix)
@@ -86,7 +86,6 @@ filt.mat <- QCTransform(raw.mat)
 cpm.mat <- CPMTransform(filt.mat)
 rank.mat <- RankTransform(cpm.mat)
 ```
-
 By default gene expression signature is generated using a "double rank" approach, which uses the median gene expression of the data set as an internal reference to compute a gene expression signature on a cell by cell basis.
 
 ### R1 Network Generation

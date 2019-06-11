@@ -23,7 +23,7 @@ As currently designed, this pipeline requires a moderate level of computer scien
 
 ### Setup
 
-To run this pipeline the following packages are required to be installed:
+To run PISCES the following packages are required to be installed:
 
 * viper
 * cluster
@@ -42,9 +42,9 @@ r1.pAct <- readRDS('tutorial/pbmc_r1-pAct.rds')
 r2.pAct <- readRDS('tutorial/pbmc_r2-pAct.rds')
 ```
 
-**NOTE:** This walkthrough will assume that you've set your working directoy to a folder containing the PISCES repo, and that all saved data will be deposited in the same directory. This is not recommended for practical use, and can be changed by specifying full paths when loading or saving in your own applications. 
+**NOTE:** This walkthrough  assumes that the working directoy to a folder containing the PISCES repo is set. All the  data will be saved in the same directory. This is not recommended for practical use, and can be changed by specifying full paths when loading or saving in your own applications. 
 
-Start by loading in the PISCES functions as well as the provided test data. Note that this pipeline uses ENSMBL Gene IDs by default:
+Load PISCES functions and est data. Note that this pipeline uses ENSMBL Gene IDs by default:
 
 ```{r}
 source('functions/process-utils.R')
@@ -58,7 +58,7 @@ library(RColorBrewer)
 raw.mat <- readRDS('tutorial/pbmc.rds')
 ```
 
-Alternatively, if your data is still in 10x format, you can read it in this manner (you don't need to run this for the purpose of the tutorial):
+N.B.  If your data are in 10x format, you can load your data as the following (you don't need to run this for the purpose of the tutorial):
 
 ```{r eval = FALSE}
 library(Matrix)
@@ -69,7 +69,7 @@ colnames(raw.mat) <- barcodes[,1]
 rownames(raw.mat) <- genes[,1]
 ```
 
-We recommend saving intermediate data at each step, since many of these steps will take a considerable amount of time with an average sized single cell data set. These saving steps are not including in this walkthrough, but can be achieved with the saveRDS function in R.
+We recommend saving intermediate data at each step as  many of these steps will take a considerable amount of time and computational power. These saving steps are not including in this walkthrough. We reccomend to save data with the saveRDS function in R.
 
 ### PreProcessing
 
@@ -79,7 +79,7 @@ First, we perform some cursory QC on the data to check the distribution of read 
 QCPlots(raw.mat)
 ```
 
-By default, we remove any genes with no coutns, as well as any samples that have too few (< 1000) or too many (> 100000) UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature
+We remove all genes with no counts acroess all cells and low quality cells. By default, all cells with less than 1000 or more than 100000 UMIs. These thresholds can be adjusted using the arguments of the QCTransform function. Once the data is filtered, we will apply a CPM normalization, then generate a gene expression signature
 
 ```{r}
 filt.mat <- QCTransform(raw.mat)
@@ -91,7 +91,8 @@ By default gene expression signature is generated using a "double rank" approach
 
 ### R1 Network Generation
 
-**NOTE:** Because ARACNe takes a considerable amount of time to run, we recommend setting up a cluster-based implementation. For ease-of-use in this tutorial, we have included the networks generated in this analysis within the tutorial, so that you do not need to generate them yourself. We encourage you to still read an understand this section, but you can also skip directly to **R1 Clustering**.
+**NOTE:** Because ARACNe takes a considerable amount of time to run, we recommend setting up a cluster-based implementation. For ease-of-use in this tutorial, we have included the networks generated in this analysis within the tutorial.
+We encourage you to still read an understand this section, but you can also skip directly to **R1 Clustering**.
 
 For a detailed tutorial on how to use ARACNe-AP, consult the tutorial here: https://github.com/califano-lab/ARACNe-AP/blob/master/README.md
 

@@ -15,7 +15,7 @@ Contacts:
 
 The pipeline for Protein Activity Inference in Single Cells (PISCES) is a regulatory-network-based methdology for the analysis of single cell gene expression profiles.
 
-PISCES transforms highly variable and noisy single cell gene expression profiles into robust and reproducible protein activity profiles and is centered around two key algorimthms: the Algorithm for the Reconstruction of Accurate Cellular Networks ARACNe [1]; and the algorithm for  Virtual Inference of Protein-activity by Enriched Regulon analysis (VIPER/metaVIPER) [2,3].
+PISCES transforms highly variable and noisy single cell gene expression profiles into robust and reproducible protein activity profiles. PISCES is centered around two key algorimthms: the Algorithm for the Reconstruction of Accurate Cellular Networks ARACNe [1]; and the algorithm for  Virtual Inference of Protein-activity by Enriched Regulon analysis (VIPER/metaVIPER) [2,3].
 
 Briefly, the ARACNe  algorithm is  one of the most widely used methods for inferring transcriptional interactions from gene expression data. The VIPER algorithm uses the expression of the ARACNe-inferred regulatory targets of a given protein, such as the targets of a transcription factor (TF), as an accurate reporter of its activity. Typically, PISCES  can accurately assess the activity of up to 6000 regulatory proteins  from single cell gene expression profiles,  significantly increasing the ability to analyze the biological function and relevance of gene products whose mRNAs are undetectable in individual cells (e.g. dropout effect).
 
@@ -23,7 +23,7 @@ As currently designed, this pipeline requires a moderate level of computer scien
 
 ### Setup
 
-To run this pipeline, you'll need to have the following packages installed:
+To run this pipeline the following packages are required to be installed:
 
 * viper
 * cluster
@@ -37,7 +37,7 @@ To run this pipeline, you'll need to have the following packages installed:
 * psych
 
 ```{r include = FALSE}
-setwd('C://Users/lvlah/linux/ac_lab/single-cell-pipeline/')
+#setwd('C://Users/lvlah/linux/ac_lab/single-cell-pipeline/')
 r1.pAct <- readRDS('tutorial/pbmc_r1-pAct.rds')
 r2.pAct <- readRDS('tutorial/pbmc_r2-pAct.rds')
 ```

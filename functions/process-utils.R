@@ -69,12 +69,11 @@ Ensemble2GeneName<-function(dat.mat) {
   ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
   name.map <- getBM(attributes=c('hgnc_symbol','hgnc_id','ensembl_gene_id'), 
                        filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
-  rownames(name.map) <- make.unique(name.map$ensembl_gene_id)
-  # create a converted dataset
-  convert.dat <- merge(name.map, dat.mat, by = c('row.names'))
-  rownames(convert.dat) <- make.unique(convert.dat$hgnc_symbol)
-  convert.dat <- convert.dat[,-c(1:4)]
-  return(as.matrix(convert.dat))
+  # remove rows with no match for gene name, then match and replace
+  name.map <- name.map[ which(!is.na(name.map$hgnc_symbol)) , ]
+  convert.dat <- dat.mat[ name.map$ensembl_gene_id , ]
+  rownames(convert.dat) <- name.map$hgnc_symbol
+  return(convert.dat)
 }
 
 #' Transforms gene names from Ensembl to Entrez

@@ -139,7 +139,7 @@ This will generate a set of clusterings for values of *k* between 2 and 5, then 
 In order to improve the quality of the clus ARACNe networks, PISCES transforms single cell gene expression profiles into metacell profiles. The PISCES meta-cell inference algorithm aims at overcoming the sparse nature of single cell data due to dropouts (inefficient mRNA capture) by integrating the expression profiles of local cell clusters that have similar protein activity profiles. This is accomplished by generating a K-nearest neighbor (KNN) graph based on the *viperSimilarity* distance method, then summing neighborhoods of ten cells. Metacells generated within each cluster are subset to 200 to avoid significant overlap. All of these steps can be accomplished with the following command (if you are interested in running these steps seperately in your analysis, there are also stand alone commands for each):
 
 ```{r eval = FALSE}
-r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.dir = 'tutorial', out.name = 'pbmc-r1-clusts')
+r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.dir = 'tutorial/', out.name = 'pbmc-r1-clusts')
 ```
 
 ### R2 Network Generation

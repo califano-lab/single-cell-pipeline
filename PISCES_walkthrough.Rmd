@@ -150,12 +150,12 @@ r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.
 The procedure for this step is the same as in **R1 Network Generation**, but must be repeated for each cluster generated in the **R1 Clustering** step. 
 
 ```{r eval = FALSE}
-c1.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c1_finalNet.tsv', r1.clustMats[[1]], 
-                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c1_')
-c2.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c2_finalNet.tsv', r1.clustMats[[2]], 
-                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c2_')
-c3.net <- RegProcess('tutorial/r2-nets/pbmc-r2-c3_finalNet.tsv', r1.clustMats[[3]], 
-                     out.dir = 'tutorial/r2-nets/', out.name = 'pbmc-r2-c3_')
+c1.net <- RegProcess('tutorial/pbmc-r2-c1_finalNet.tsv', r1.clustMats[[1]], 
+                     out.dir = 'tutorial/', out.name = 'pbmc-r2-c1_')
+c2.net <- RegProcess('tutorial/pbmc-r2-c2_finalNet.tsv', r1.clustMats[[2]], 
+                     out.dir = 'tutorial/', out.name = 'pbmc-r2-c2_')
+c3.net <- RegProcess('tutorial/pbmc-r2-c3_finalNet.tsv', r1.clustMats[[3]], 
+                     out.dir = 'tutorial/', out.name = 'pbmc-r2-c3_')
 ```
 
 ### R2 Clustering

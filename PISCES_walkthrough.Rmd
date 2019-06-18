@@ -208,7 +208,7 @@ r2.pAct <- Ensemble2GeneName(r2.pAct)
 These master regulators can then be visualized in a heatmap:
 
 ```{r}
-ClusterHeatmap(r2.pAct[ MR_UnWrap(r2.MRs, top = 10) , ], clust = r2.louvain, plotTitle = 'Louvain Viper Clustering Master Regulators')
+ClusterHeatmap(r2.pAct[ MR_UnWrap(r2.MRs, top = 10) , ], clust = r2.louvain, plotTitle = 'Louvain Clustering Master Regulators')
 ```
 
 #### Acknowledgements

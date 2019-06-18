@@ -103,8 +103,8 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
   }
   pheatmap(pheatmap.mat, annotation_col = data.frame('Cluster' = as.factor(clust)),  
            main = plotTitle, width = 6, height = 8, scale = 'row',
-           cluster_rows = TRUE, cluster_cols = FALSE, show_rownames = TRUE, show_colnames = FALSE,
-           color = colorRampPalette(rev(brewer.pal(10, 'RdBu')))(100),  fontsize_row = 4)
+           cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = TRUE, show_colnames = FALSE,
+           color = colorRampPalette(colors = c('blue', 'white', 'red'))(100),  fontsize_row = 4)
   if (!missing(plotPath)) {
     dev.off()
   }

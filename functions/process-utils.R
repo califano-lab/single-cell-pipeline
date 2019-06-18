@@ -152,7 +152,31 @@ cbcMR_UMAP <- function(dat.mat, num.mrs = 50) {
 #' Unwraps a nested MR list: previous functions return cluster specific master regulators as a list of lists. This funciton will unwrap that object into one, unique list.
 #'
 #' @param MRs List of lists, with MR names as sub-list names and MR activity as sub-list entries.
+#' @param top If specified, will subset the top X regulators from each set.
 #' @return Returns a de-duplicated list of MRs.
-MR_UnWrap <- function(MRs) {
-  return( unique(unlist(lapply(MRs, names), use.names = FALSE)) )
+MR_UnWrap <- function(MRs, top) {
+  if (missing(top)) {
+    return( unique(unlist(lapply(MRs, names), use.names = FALSE)) )
+  } else {
+    mr.unwrap <- lapply(MRs, function(x) {
+      names(sort(x, decreasing = TRUE))[ 1:min(top, length(x)) ]
+      })
+    return( unique(unlist(mr.unwrap, use.names = FALSE)) )
+  }
+}
+
+#' Generates a UMAP based on a set of proteins.
+#' 
+#' @param dat.mat Matrix of protein activity (proteins X samples).
+#' @param mrs List of proteins to use as master regulators.
+#' @return UMAP object.
+CustomUMAP <- function(dat.mat) {
+  require(umap)
+  # set UMAP parameters
+  umap_custom <- umap.defaults
+  umap_custom$n_neighbors <- 25
+  umap_custom$metric <- 'pearson'
+  # compute umap
+  c.umap <- umap(t(dat.mat), config = umap_custom, init = 'random')
+  return(c.umap)
 }

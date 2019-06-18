@@ -215,3 +215,13 @@ IterPAM <- function(dat.mat, dist.func, iter.max = 5, sil.thresh = 0.25) {
   sil.mat <- sil.mat[rownames(label.mat), ]
   return(list('clustering' = label.mat, 'silhouette' = sil.mat))
 }
+
+#' Louvain clustering using the MUDAN package.
+#' 
+#' @param dat.mat Matrix of data to be clustered (features X samples).
+#' @return Clustering object.
+LouvainClust <- function(dat.mat) {
+  require(MUDAN)
+  res <- MUDAN::getComMembership(t(dat.mat), k = 100, method = igraph::cluster_infomap, verbose = FALSE) 
+  return(res)
+}

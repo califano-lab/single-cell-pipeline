@@ -34,6 +34,27 @@ AnovaMRs <- function(dat.mat, clustering) {
   return(pVals)
 }
 
+#' Identifies MRs based on a bootstraped Ttest between clusters.
+#'
+#' @param dat.mat Matrix of protein activity (proteins X samples).
+#' @param clustering Vector of cluster labels.
+#' @param bootstrapNum Number of bootstraps to use. Default of 10 
+#' @return Returns a list of lists; each list is a vector of sorted p-values for all proteins in the matrix.
+BTTestMRs <- function(dat.mat, clustering, bootstrapNum = 100) {
+  # set initial variables
+  k <- length(table(clustering))
+  mrs <- list()
+  # identify MRs for each cluster
+  for (i in 1:k) {
+    clust <- names(table(clustering))[i]
+    clust.vect <- which(clustering == clust)
+    mList <- bootstrapTtest(dat.mat[, clust.vect ], dat.mat[, -clust.vect ], per = bootstrapNum)
+    mrs[[clust]] <- sort(rowMeans(mList), decreasing = TRUE) # return mean p-value for the bootstraps
+  }
+  # return 
+  return(mrs)
+}
+
 #' Returns the master regulators for the given data.
 #' 
 #' @param dat.mat Matrix of protein activity (proteins X samples).
@@ -81,16 +102,17 @@ GetMRs <- function(dat.mat, clustering, method, numMRs = 50, bottom = FALSE, wei
   }
 }
 
-#' Generates a UMAP based on a set of proteins.
-#' 
+#' Identifies MRs on a cell-by-cell basis and returns a merged, unique list of all such MRs.
+#'
 #' @param dat.mat Matrix of protein activity (proteins X samples).
-#' @param mrs List of proteins to use as master regulators.
-#' @return UMAP object.
-MRUMAP <- function(dat.mat, mrs) {
-  require(umap)
-  dat.mat <- dat.mat[mrs,]
-  dat.umap <- umap(t(dat.mat))
-  return(dat.umap)
+#' @param numMRs Default number of MRs to identify in each cell. Default of 25.
+#' @return Returns a list of master regulators, the unique, merged set from all cells.
+CBCMRs <- function(dat.mat, numMRs = 25) {
+  # identify MRs
+  cbc.mrs <- apply(dat.mat, 2, function(x) { names(sort(x, decreasing = TRUE))[1:numMRs] })
+  cbc.mrs <- unique(unlist(as.list(cbc.mrs)))
+  # return
+  return(cbc.mrs)
 }
 
 #' Make Cluster Metacells for ARACNe. Will take a clustering and produce saved meta cell matrices.
@@ -184,6 +206,40 @@ RegProcess <- function(a.file, exp.mat, out.dir, out.name = '.') {
   saveRDS(pruned.reg, file = paste(out.dir, out.name, 'pruned.rds', sep = ''))
 }
 
+#' Performs a stouffer integration of a list of viper matrices.
+#' 
+#' @param vip.mats List of viper matrices (proteins X samples).
+#' @param weights Vector of weights for the stouffer integration. If not included, all matrices are weighted equally.
+#' @return An integrated viper matrix (proteins X samples).
+VIPIntegrate <- function(vip.mats, weights) {
+  # set weights, if not specified
+  if (missing(weights)) {
+    weights <- rep(1, length(vip.mats))
+  }
+  # identify set of regulators and create final matrix
+  regs <- unique(Reduce(union, lapply(vip.mats, rownames)))
+  int.mat <- matrix(0L, nrow = length(regs), ncol = ncol(vip.mats[[1]]))
+  rownames(int.mat) <- regs; colnames(int.mat) <- colnames(vip.mats[[1]])
+  # integrate each reg
+  for (i in 1:length(regs)) {
+    # generate matrix of all instances of this regulon
+    reg.mat <- as.data.frame( lapply(vip.mats, function(x) {
+      if (regs[i] %in% rownames(x)) {
+        return( x[ regs[i] ,] )
+      } else {
+        return( rep(NA, ncol(x)) )
+      }
+    } ) )
+    incl.vec <- which(!is.na(reg.mat[1,]))
+    # integrata
+    c.weights <- weights[incl.vec]
+    sInt <- rowSums( t(t(reg.mat[, incl.vec]) * c.weights) ) / sqrt(sum(c.weights ** 2))
+    int.mat[regs[i] ,] <- sInt
+  }
+  # return
+  return(int.mat)
+}
+
 #' Performs VIPER analysis with all the GTEx Networks, then identifies and uses the top set for a metaVIPER analysis.
 #' 
 #' @param dat.mat Gene expression signature in matrix format (genes X samples) with ENSG ids.
@@ -191,6 +247,7 @@ RegProcess <- function(a.file, exp.mat, out.dir, out.name = '.') {
 #' @param num.nets Number of top networks to use. Default of 3.
 #' @return A metaVIPER integration of the VIPER results for the top num.nets of GTEx networks (proteins X samples).
 GTExVIPER <- function(dat.mat, gtex.path, num.nets = 3) {
+  L <- ncol(dat.mat)
   ## convert to entrez
   convert.dict <- readRDS(paste(gtex.path, 'gene-convert-dict.rds', sep = ''))
   dat.mat <- dat.mat[ which(rownames(dat.mat) %in% convert.dict$Ensembl.Gene.ID) ,] # remove rows with no ENSG match
@@ -210,30 +267,34 @@ GTExVIPER <- function(dat.mat, gtex.path, num.nets = 3) {
   for (i in 1:length(gtex.nets)) {
     viper.mats[[i]] <- viper(dat.mat, gtex.nets[[i]], method = 'none')
   }
-  ## identify the most important networks (as defined by num.nets)
-  net.counts <- rep(0, length(gtex.nets)); names(net.counts) <- 1:length(gtex.nets)
-  shared.regs <- Reduce(intersect, lapply(viper.mats, rownames))
-  for (i in 1:length(shared.regs)) {
-    reg <- shared.regs[i]
-    reg.mat <- as.data.frame(lapply(viper.mats, function(x) { x[reg,] }))
-    max.inds <- apply(reg.mat, 1, function(x) { which.max(abs(x)) } )
-    for (j in 1:length(max.inds)) {
-      net.counts[ max.inds[j] ] <- net.counts[ max.inds[j] ] + 1
-    }
+  names(viper.mats) <- 1:length(viper.mats)
+  ## sample specific network selection and viper integration
+  net.weights <- matrix(0L, nrow = length(viper.mats), ncol = L)
+  for (i in 1:ncol(dat.mat)) {
+    samp <- colnames(dat.mat)[i]
+    net.ints <- lapply(viper.mats, function(x) {
+      vect <- x[, samp]
+      vect <- pnorm(abs(vect), lower.tail = FALSE)
+      hmpVal <- 1 / mean(1/vect)
+    })
+    net.ints <- unlist(net.ints)
+    net.ints <- net.ints / sum(net.ints)
+    net.weights[,i] <- net.ints
   }
-  net.counts <- sort(net.counts, decreasing = TRUE)
-  top.nets <- as.numeric(names(net.counts)[1:num.nets])
-  ## clean up for memory purposes
-  rm(viper.mats)
-  ## integrate the results of the three selected networks
-  mVip.mat <- viper(dat.mat, regulon = gtex.nets[top.nets], method = 'none')
-  ## convert to ensemble
-  mVip.mat <- mVip.mat[ which(rownames(mVip.mat) %in% convert.dict$Entrez.Gene.ID) ,]
-  rname.match <- match(rownames(mVip.mat), convert.dict$Entrez.Gene.ID)
-  ensg.names <- convert.dict$Ensembl.Gene.ID[rname.match]
-  na.inds <- which(ensg.names == '')
-  mVip.mat <- mVip.mat[ -na.inds ,]; ensg.names <- ensg.names[ -na.inds ]
-  rownames(mVip.mat) <- ensg.names
-  ## return
-  return(mVip.mat)
+  ## identify all regs for integation
+  reg.union <- unique(unlist(lapply(viper.mats, rownames)))
+  mvip.mat <- matrix(0L, nrow = length(reg.union), ncol = L)
+  rownames(mvip.mat) <- reg.union; colnames(mvip.mat) <- colnames(dat.mat)
+  ## integrate based on weights
+  for (i in 1:L) {
+    samp <- colnames(dat.mat)[i]
+    samp.weights <- net.weights[,i]; names(samp.weights) <- 1:length(samp.weights)
+    samp.weights <- sort(samp.weights, decreasing = TRUE)
+    samp.mats <- viper.mats[names(samp.weights[1:num.nets])] # modify this step to not limit the itnegration to a pre-specified number of networks
+    samp.mats <- lapply(samp.mats, function(x) { as.matrix(x[,samp], ncol = 1) } )
+    mvip.vect <- VIPIntegrate(samp.mats, samp.weights[1:num.nets])
+    mvip.mat[rownames(mvip.vect) , samp] <- mvip.vect
+  }
+  # return matrix
+  return(mvip.mat)
 }

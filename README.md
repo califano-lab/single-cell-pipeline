@@ -1,8 +1,4 @@
-#### PISCES Tutorial
-authors: 
- - Lukas Vlahos
- - Pasquale Laise
- - Andrea Califano
+#### PISCES tutorial
 ---
 **Authors:** Lukas Vlahos, Pasquale Laise, Andrea Califano  
 **Correspondence:** Pasquale Laise and Andrea Califano  

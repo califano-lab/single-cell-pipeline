@@ -1,13 +1,17 @@
 ---
 title: "PISCES Tutorial"
-contacts: lv2395@cumc.columbia.edu, pl2959@cumc.columbia.edu, ac2248@cumc.columbia.edu.
-correspondence: Pasquale Laise  and Andrea Califano
-output:
-  pdf_document: default
-  html_document: default
-fig_align: center
-authors: Lukas Vlahos, Pasquale Laise, Andrea Califano
+authors: 
+ - Lukas Vlahos
+ - Pasquale Laise
+ - Andrea Califano
 ---
+**Authors:** Lukas Vlahos, Pasquale Laise, Andrea Califano  
+**Correspondence:** Pasquale Laise and Andrea Califano  
+**Contacts:**
+
+* Lukas Vlahos: lv2395@cumc.columbia.edu
+* Pasquale Laise: pl2959@cumc.columbia.edu
+* Andrea Califano: ac2248@cumc.columbia.edu
 
 ### Introduction
 
@@ -61,7 +65,7 @@ library(umap)
 raw.mat <- readRDS('tutorial/pbmc.rds')
 ```
 
-Alternatively, if the data are in 10x format, you can load the data using the following code (*if the data are already in .rds format, this step does not need to run this for the purpose of the tutorial*):
+Alternatively, if the data are in 10x format, you can load the data using the following code (*if the data are already in .rds format, this step does not need to run this for the purposes of the tutorial*):
 
 ```{r eval=FALSE}
 library(Matrix)
@@ -130,7 +134,7 @@ r1.gtex <- GTExVIPER(r1.pAct, 'GTEx-Nets/')
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 
-Once the protein activity has been computed, clustering analysis can be performed on the protein activity-based distance metrix. This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clustering, but other methods such as K-Means or louvain can be applied. Other methods such as K-Means or Louvain clustering can be applied, but we recommend the default implementation (i.e. viper similarity and PAM) as we have extensively tested this approach.
+Once the protein activity has been computed, clustering analysis can be performed on the protein activity-based distance matrix This pipeline uses *viperSimilarity* as a distance metric and the *PAM* algorithm for clusterin. Other methods such as K-Means or Louvain clustering can be applied, but we recommend the default implementation (i.e. viper similarity and PAM) as we have extensively tested this approach.
 
 ```{r, fig.align = 'center'}
 r1.viperDist <- as.dist(viperSimilarity(r1.pAct))
@@ -151,9 +155,9 @@ r1.clustMats <- MakeCMfA(filt.mat, r1.viperDist, clustering = r1.clusts$k3, out.
 
 ### 2.1 Cluster-specific network generation
 
-In the first clustering analysis, PISCES has identified clusters of cells based ona single regulatory model (ARACNe network)inferred from all the data. However, these clusters represent populations of cells with distinct regulatory models (e.g. lineages or cell types) whose identification is essential to accurately infer protein activity. In this step, PISCES infers cluster-specific regulatory networks.
+In the first clustering analysis, PISCES has identified clusters of cells based ona single regulatory model (ARACNe network) inferred from all the data. However, these clusters represent populations of cells with distinct regulatory models (e.g. lineages or cell types) whose identification is essential to accurately infer protein activity. In this step, PISCES infers cluster-specific regulatory networks.
 
-**NOTE:** NOTE: As in the **1.1 Network Generation** step, we have  included the ARACNe networks generated in this step within the tutorial. 
+**NOTE:** NOTE: As in the **1.1 Network Generation** step, we have included the ARACNe networks generated in this step within the tutorial. 
 
 The procedure for this step is the same as in **1.1 Network Generation**, but must be repeated for each cluster generated in the **1.1 Clustering** step. 
 
@@ -210,6 +214,14 @@ These master regulators can then be visualized in a heatmap:
 ```{r, fig.align = 'center', fig.width = 9, fig.height = 9}
 ClusterHeatmap(r2.pAct[ MR_UnWrap(r2.MRs, top = 10) , ], clust = r2.louvain, plotTitle = 'Louvain Clustering Master Regulators')
 ```
+
+### References
+
+1.	Lachmann, A., et al., *ARACNe-AP: gene network reverse engineering through adaptive partitioning inference of mutual information*. Bioinformatics, 2016. 32(14): p. 2233-5.  
+2.	Califano, H.D.a.A., *iterClust: Iterative Clustering*. R package version 1.4.0. 2018: https://github.com/hd2326/iterClust.  
+3.	Ding, H., et al., *Quantitative assessment of protein activity in orphan tissues and single cells using the metaVIPER algorithm*. Nat Commun, 2018. 9(1): p. 1471.  
+4.  Rosseeuw, P.J., *Journal of Computational and Applied Mathematics* 20 (1987) 53-65  
+5.  Izenman, A.J., *Modern Multivariate Statistical Techniques. Regression, Classification, and Manifold Learning*. Springer text in statistics, 2008 (Chapter 12)
 
 #### Acknowledgements
 

@@ -86,6 +86,16 @@ ClusterMatrices <- function(dat.mat, clust, savePath, savePref, sizeThresh = 300
   }
 }
 
+#' Identifies a vector of colors for a given number of clusters. Internal function.
+#'
+#' @param k Number of clusters.
+#' @return A vector of hues
+ClusterColors <- function(k) {
+  hues = seq(15, 375, length = k + 1)
+  return(hcl(h = hues, l = 65, c = 100)[1:k])
+}
+
+
 #' Generates a pheatmap from the given data and clustering object.
 #' 
 #' @param dat.mat Data matrix to be used (features X samples).
@@ -101,8 +111,12 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
   if (!missing(plotPath)) {
     jpeg(filename = plotPath) 
   }
-  pheatmap(pheatmap.mat, annotation_col = data.frame('Cluster' = as.factor(clust)),  
-           main = plotTitle, width = 6, height = 8, scale = 'row',
+  annot_color <- ClusterColors(length(unique(clust))); names(annot_color) <- sort(unique(clust))
+  print(head(as.factor(clust)))
+  print(annot_color)
+  pheatmap(pheatmap.mat, annotation_col = data.frame('Cluster' = as.factor(clust)), 
+           annotation_colors = list('Cluster' = annot_color),
+           main = plotTitle, width = 6, height = 8, scale = 'row', 
            cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = TRUE, show_colnames = FALSE,
            color = colorRampPalette(colors = c('blue', 'white', 'red'))(100),  fontsize_row = 4)
   if (!missing(plotPath)) {
@@ -110,25 +124,18 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
   }
 }
 
-#' Using a precomputed UMAP, generates a labeled UMAP plot of a clustering.
+#' Generates a ggplot2 scatter plot of the clusters in UMAP space.
 #' 
-#' @param clust Clustering object.
-#' @param umap UMAP object.
-#' @param plotTitle Title for the plot.
-#' @param plotPath Optional argument to save plot rather than display it.
+#' @param umap.obj UMAP object, generated from the CustomUMAP function (or manually using the umap package).
+#' @param clust Vector of cluster labels.
+#' @param plotTitle Titel of the plot.
 #' @return NULL
-ClusterUMAP <- function(clust, umap, plotTitle, plotPath) {
+ClusterScatter <- function(umap.obj, clust, plotTitle) {
   require(ggplot2)
-  plot.dat <- data.frame('UMAP1' = umap$layout[,1], 'UMAP2' = umap$layout[,2])
-  plot.dat[['cluster']] <- as.factor(clust[rownames(umap$layout)])
-  if (!missing(plotPath)) {
-    jpeg(filename = plotPath) 
-  }
-  print(ggplot(plot.dat, aes(x=UMAP1, y=UMAP2, color=cluster)) + geom_point() +
-    ggtitle(plotTitle))
-  if (!missing(plotPath)) {
-    dev.off()
-  }
+  plot.dat <- data.frame('UMAP1' = umap.obj$layout[,1], 'UMAP2' = umap.obj$layout[,2], 'Clusters' = clust)
+  ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(color = Clusters), alpha=0.5, size = 2) +
+    theme_bw() + theme(legend.justification = c("right", "top")) + ggtitle(plotTitle) +
+    scale_color_manual(values = ClusterColors(length(unique(clust))))
 }
 
 #' Iterative clustering using PAM

@@ -84,7 +84,7 @@ Ensemble2Entrez <- function(dat.mat) {
   # packages
   require(biomaRt)
   # get the mart
-  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
   name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
                     filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
   # remove rows with no match for entrez, then match and replace
@@ -102,7 +102,7 @@ Entrez2Ensemble <- function(dat.mat) {
   # packages
   require(biomaRt)
   # get the mart
-  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
   name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
                     filters = 'entrezgene', values = (rownames(dat.mat)), mart = ensembl)
   # remove rows with no match for entrez, then match and replace

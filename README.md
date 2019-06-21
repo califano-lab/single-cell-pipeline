@@ -32,6 +32,9 @@ PISCES is implemented in R and requires the following packages:
 * psych
 * MUDAN
 
+PLEASE READ THE SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE USING THE SOFTWARE PACKAGES
+
+
 ```{r include = FALSE}
 setwd('C://Users/lvlah/linux/ac_lab/single-cell-pipeline/')
 r1.pAct <- readRDS('tutorial/pbmc_r1-pAct.rds')

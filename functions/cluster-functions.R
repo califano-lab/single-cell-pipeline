@@ -89,9 +89,10 @@ ClusterMatrices <- function(dat.mat, clust, savePath, savePref, sizeThresh = 300
 #' Identifies a vector of colors for a given number of clusters. Internal function.
 #'
 #' @param k Number of clusters.
+#' @param offset Optional argument to shift colors along color wheel. 
 #' @return A vector of hues
-ClusterColors <- function(k) {
-  hues = seq(15, 375, length = k + 1)
+ClusterColors <- function(k, offset = 0) {
+  hues = seq(15, 375, length = k + 1) + offset
   return(hcl(h = hues, l = 65, c = 100)[1:k])
 }
 
@@ -112,8 +113,6 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
     jpeg(filename = plotPath) 
   }
   annot_color <- ClusterColors(length(unique(clust))); names(annot_color) <- sort(unique(clust))
-  print(head(as.factor(clust)))
-  print(annot_color)
   pheatmap(pheatmap.mat, annotation_col = data.frame('Cluster' = as.factor(clust)), 
            annotation_colors = list('Cluster' = annot_color),
            main = plotTitle, width = 6, height = 8, scale = 'row', 

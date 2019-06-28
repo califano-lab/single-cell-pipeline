@@ -247,7 +247,6 @@ VIPIntegrate <- function(vip.mats, weights) {
 #' @param num.nets Number of top networks to use. Default of 3.
 #' @return A metaVIPER integration of the VIPER results for the top num.nets of GTEx networks (proteins X samples).
 GTExVIPER <- function(dat.mat, gtex.path, num.nets = 3) {
-  L <- ncol(dat.mat)
   ## convert to entrez
   convert.dict <- readRDS(paste(gtex.path, 'gene-convert-dict.rds', sep = ''))
   dat.mat <- dat.mat[ which(rownames(dat.mat) %in% convert.dict$Ensembl.Gene.ID) ,] # remove rows with no ENSG match
@@ -267,34 +266,30 @@ GTExVIPER <- function(dat.mat, gtex.path, num.nets = 3) {
   for (i in 1:length(gtex.nets)) {
     viper.mats[[i]] <- viper(dat.mat, gtex.nets[[i]], method = 'none')
   }
-  names(viper.mats) <- 1:length(viper.mats)
-  ## sample specific network selection and viper integration
-  net.weights <- matrix(0L, nrow = length(viper.mats), ncol = L)
-  for (i in 1:ncol(dat.mat)) {
-    samp <- colnames(dat.mat)[i]
-    net.ints <- lapply(viper.mats, function(x) {
-      vect <- x[, samp]
-      vect <- pnorm(abs(vect), lower.tail = FALSE)
-      hmpVal <- 1 / mean(1/vect)
-    })
-    net.ints <- unlist(net.ints)
-    net.ints <- net.ints / sum(net.ints)
-    net.weights[,i] <- net.ints
+  ## identify the most important networks (as defined by num.nets)
+  net.counts <- rep(0, length(gtex.nets)); names(net.counts) <- 1:length(gtex.nets)
+  shared.regs <- Reduce(intersect, lapply(viper.mats, rownames))
+  for (i in 1:length(shared.regs)) {
+    reg <- shared.regs[i]
+    reg.mat <- as.data.frame(lapply(viper.mats, function(x) { x[reg,] }))
+    max.inds <- apply(reg.mat, 1, function(x) { which.max(abs(x)) } )
+    for (j in 1:length(max.inds)) {
+      net.counts[ max.inds[j] ] <- net.counts[ max.inds[j] ] + 1
+    }
   }
-  ## identify all regs for integation
-  reg.union <- unique(unlist(lapply(viper.mats, rownames)))
-  mvip.mat <- matrix(0L, nrow = length(reg.union), ncol = L)
-  rownames(mvip.mat) <- reg.union; colnames(mvip.mat) <- colnames(dat.mat)
-  ## integrate based on weights
-  for (i in 1:L) {
-    samp <- colnames(dat.mat)[i]
-    samp.weights <- net.weights[,i]; names(samp.weights) <- 1:length(samp.weights)
-    samp.weights <- sort(samp.weights, decreasing = TRUE)
-    samp.mats <- viper.mats[names(samp.weights[1:num.nets])] # modify this step to not limit the itnegration to a pre-specified number of networks
-    samp.mats <- lapply(samp.mats, function(x) { as.matrix(x[,samp], ncol = 1) } )
-    mvip.vect <- VIPIntegrate(samp.mats, samp.weights[1:num.nets])
-    mvip.mat[rownames(mvip.vect) , samp] <- mvip.vect
-  }
-  # return matrix
-  return(mvip.mat)
+  net.counts <- sort(net.counts, decreasing = TRUE)
+  top.nets <- as.numeric(names(net.counts)[1:num.nets])
+  ## clean up for memory purposes
+  rm(viper.mats)
+  ## integrate the results of the three selected networks
+  mVip.mat <- viper(dat.mat, regulon = gtex.nets[top.nets], method = 'none')
+  ## convert to ensemble
+  mVip.mat <- mVip.mat[ which(rownames(mVip.mat) %in% convert.dict$Entrez.Gene.ID) ,]
+  rname.match <- match(rownames(mVip.mat), convert.dict$Entrez.Gene.ID)
+  ensg.names <- convert.dict$Ensembl.Gene.ID[rname.match]
+  na.inds <- which(ensg.names == '')
+  mVip.mat <- mVip.mat[ -na.inds ,]; ensg.names <- ensg.names[ -na.inds ]
+  rownames(mVip.mat) <- ensg.names
+  ## return
+  return(mVip.mat)
 }

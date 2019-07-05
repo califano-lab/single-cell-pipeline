@@ -16,21 +16,57 @@ QCTransform <- function(raw.mat, minCount = 1000, maxCount = 100000, minGeneRead
 #' Generates basic quality control plots from raw gene expression data.
 #' 
 #' @param raw.mat Matrix of raw gene expression data (genes X samples).
+#' @param mt.genes Path to .csv file with ENSG and Hugo names for mitochondrial genes.
 #' @param plot.path Optional argumetn of save path for plot.'
-QCPlots <- function(raw.mat, plot.path) {
+QCPlots <- function(raw.mat, mt.genes, plot.path) {
   if (!missing(plot.path)) {
     pdf(plot.path)
   }
+  ## find mt percentages
+  mt.table <- read.table(mt.genes, sep = ',', header = TRUE, stringsAsFactors = FALSE)
+  mt.ensg <- mt.table$ENSG
+  mt.perc <- MTPercent(raw.mat, mt.ensg)
   ## generate plots
-  nf <- layout(matrix(c(1,2,3), nrow = 1), widths = c(3, 3, 3), heights = c(5, 5, 5), TRUE)
+  nf <- layout(matrix(c(1, 2, 3, 4), nrow = 2), widths = c(4, 4, 4, 4), heights = c(4, 4, 4, 4), TRUE)
   boxplot(colSums(raw.mat), main = "Sequencing depth", frame.plot=F, col="orange")
   boxplot(colSums(raw.mat > 0), main = "Detected genes", frame.plot=F, col="cyan")
+  hist(mt.perc, main = 'Mitochondrial Gene Percentage', xlab = 'MT%')
   smoothScatter(colSums(raw.mat), colSums(raw.mat > 0), main = "Saturation plot",
                 frame.plot=FALSE, ylab = "Detected genes", xlab = "Sequencing depth", 
                 cex = 2, postPlotHook=NULL)
   if (!missing(plot.path)) {
     dev.off()
   }
+}
+
+#' Returns vector of mitochondrial percentages for the given samples.
+#'
+#' @param dat.mat Matrix of raw gene expression data (genes X samples).
+#' @param mt.genes List of mitochondrial genes
+#' @retun Returns named vector of mitochondrial gene percentage.
+MTPercent <- function(dat.mat, mt.genes) {
+  mt.count <- colSums(dat.mat[ intersect(rownames(dat.mat), mt.genes) ,])
+  total.count <- colSums(dat.mat)
+  mt.percent <- mt.count / total.count
+  head(mt.percent)
+  return( mt.percent )
+}
+
+#' Filters data based on percentage of mitochondrial gens.
+#'
+#' @param raw.mat Matrix of raw gene expression data (genes X samples)
+#' @param mt.genes Path to .csv file with ENSG and Hugo names for mitochondrial genes.
+#' @param mt.thresh Threshold above which cells will be removed. Default of 0.15
+MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
+  ## find mt percentages
+  mt.table <- read.table(mt.genes, sep = ',', header = TRUE, stringsAsFactors = FALSE)
+  mt.ensg <- mt.table$ENSG
+  mt.perc <- MTPercent(raw.mat, mt.ensg)
+  ## filter matrix
+  thresh.cells <- names(mt.perc)[which(mt.perc < mt.thresh)]
+  print(length(thresh.cells))
+  dat.mat <- dat.mat[, thresh.cells ]
+  return(dat.mat)
 }
 
 #' Performas a CPM normalization on the given data. 
@@ -71,6 +107,7 @@ Ensemble2GeneName<-function(dat.mat) {
                        filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
   # remove rows with no match for gene name, then match and replace
   name.map <- name.map[ which(!is.na(name.map$hgnc_symbol)) , ]
+  name.map <- name.map[ which(name.map$hgnc_symbol != '') , ]
   convert.dat <- dat.mat[ name.map$ensembl_gene_id , ]
   rownames(convert.dat) <- name.map$hgnc_symbol
   return(convert.dat)

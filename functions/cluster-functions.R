@@ -73,6 +73,7 @@ ClusterMatrices <- function(dat.mat, clust, savePath, savePref, sizeThresh = 300
     if (clust.table[i] > sizeThresh) {
       clust.cells <- names(which(clust$clustering == names(clust.table)[i]))
       clust.mat <- dat.mat[, clust.cells]
+      clust.mat <- clust.mat[ rowSums(clust.mat) >= 1 ,]
       if (missing(savePath)) {
         clust.mats[[i]] <- clust.mat
       } else {

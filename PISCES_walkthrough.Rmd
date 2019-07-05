@@ -80,18 +80,23 @@ We recommend saving intermediate data at each step, since many of these steps wi
 
 ### PreProcessing
 
-First, we perform QC on the data to check the distribution of read depth and genes detected in each sample:
+First, the data is analyzed for quality control. Sequencing depth, number of detected genes, saturation, and mitochondrial gene percentage are assessed here. The mitochondrial gene percentage analysis requires a saved .csv with mitochondrial gene names, which is provided for human genes in PISCES ('mt-geneList.csv'):
 
-```{r, fig.align = 'center', fig.width = 9, fig.height = 5}
-QCPlots(raw.mat)
+```{r, fig.align = 'center', fig.width = 10, fig.height = 10}
+QCPlots(raw.mat, 'mt-geneList.csv')
 ```
 
-In the preprocessing step we remove all the genes with no expression (zero reads across all cells) and low quality cells. Cells  with less than 1000 UMIs or more than 100000 UMIs can be considered low quality cells. These thresholds can be adjusted using the arguments of the QCTransform function based on your data. We also recommened to check the percentage of counts associated with mithocondrial genes on a cell by cell basis as, usually, cells with high level micthocondrial genes are considered low quality/dying cells.
+This data is used to preprocess the data in several ways:
 
-Once the data set is filtered, it is normalized using CPM. A gene expression signature (*rank.mat*) is then generated:
+* Genes with no expression (zero reads across all cells) are removed
+* Cells with less than 1000 UMIs or more than 100000 UMIs can be considered low quality, and are also removed.
+* Additionally, if a population of cells has significantly more mitochondrial genes (generally, more than 10%), these cells can be removed with the *MTFilter* function.
+
+The parameters for both the *QCTransform* and *MTFilter* function should be adjusted for your data. Once the data set is filtered, it is normalized using CPM. Finally, a gene expression signature (*rank.mat*) is then generated:
 
 ```{r}
-filt.mat <- QCTransform(raw.mat)
+mt.mat <- MTFilter(raw.mat, 'mt-geneList.csv')
+filt.mat <- QCTransform(mt.mat)
 cpm.mat <- CPMTransform(filt.mat)
 rank.mat <- RankTransform(cpm.mat)
 ```

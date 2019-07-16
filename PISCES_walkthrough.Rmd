@@ -135,7 +135,7 @@ Single-cell ARACNe networks usually contain fewer regulons than those generated 
 **NOTE:** for the purposes of this tutorial, this is an optional step (not required). Because this step uses more than 30 networks, it will take a considerable amount of time and memory to run. We recommend running this step on a cluster system with 32GB of memory or more allocated for any data set with 1000 or more cells. Finally, this step is not relevant for murine data, as the GTEx networks are generated from human RNAseq samples.
 
 ```{r eval=FALSE}
-r1.gtex <- GTExVIPER(r1.pAct, 'GTEx-Nets/')
+r1.gtex <- GTExVIPER(rank.mat, 'GTEx-Nets/')
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 

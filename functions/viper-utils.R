@@ -42,6 +42,7 @@ AnovaMRs <- function(dat.mat, clustering) {
 #' @return Returns a list of lists; each list is a vector of sorted p-values for all proteins in the matrix.
 BTTestMRs <- function(dat.mat, clustering, bootstrapNum = 100) {
   # set initial variables
+  clustering <- clustering
   k <- length(table(clustering))
   mrs <- list()
   # identify MRs for each cluster
@@ -255,6 +256,7 @@ GTExVIPER <- function(dat.mat, gtex.path, num.nets = 3) {
   na.inds <- which(is.na(entrez.names)) # remove NA entrez names from matrix
   dat.mat <- dat.mat[ -na.inds ,]; entrez.names <- entrez.names[ -na.inds]
   rownames(dat.mat) <- entrez.names
+  print(dim(dat.mat))
   ## load in all gtex networks
   net.files <- dir(gtex.path, pattern = '*.rda')
   gtex.nets <- list()

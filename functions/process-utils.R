@@ -122,10 +122,11 @@ Ensemble2Entrez <- function(dat.mat) {
   require(biomaRt)
   # get the mart
   ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
-  name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
+  name.map <- getBM(attributes=c('entrezgene_id','ensembl_gene_id'), 
                     filters = 'ensembl_gene_id', values = (rownames(dat.mat)), mart = ensembl)
   # remove rows with no match for entrez, then match and replace
   name.map <- name.map[ which(!is.na(name.map$entrezgene)) , ]
+  name.map <- name.map[ which(name.map$entrezgene != '') , ]
   convert.dat <- dat.mat[ name.map$ensembl_gene_id , ]
   rownames(convert.dat) <- name.map$entrezgene
   return(convert.dat)
@@ -140,10 +141,11 @@ Entrez2Ensemble <- function(dat.mat) {
   require(biomaRt)
   # get the mart
   ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl", host = "http://useast.ensembl.org")
-  name.map <- getBM(attributes=c('entrezgene','ensembl_gene_id'), 
-                    filters = 'entrezgene', values = (rownames(dat.mat)), mart = ensembl)
+  name.map <- getBM(attributes=c('entrezgene_id','ensembl_gene_id'), 
+                    filters = 'entrezgene_id', values = (rownames(dat.mat)), mart = ensembl)
   # remove rows with no match for entrez, then match and replace
   name.map <- name.map[ which(!is.na(name.map$ensembl_gene_id)) , ]
+  name.map <- name.map[ which(name.map$ensembl_gene_id != '') , ]
   convert.dat <- dat.mat[ as.character( name.map$entrezgene ) , ]
   rownames(convert.dat) <- name.map$ensembl_gene_id
   return(convert.dat)

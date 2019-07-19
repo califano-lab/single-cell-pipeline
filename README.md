@@ -1,4 +1,9 @@
-#### PISCES tutorial
+---
+title: "PISCES Tutorial"
+authors: 
+ - Lukas Vlahos
+ - Pasquale Laise
+ - Andrea Califano
 ---
 **Authors:** Lukas Vlahos, Pasquale Laise, Andrea Califano  
 **Correspondence:** Pasquale Laise and Andrea Califano  
@@ -31,9 +36,6 @@ PISCES is implemented in R and requires the following packages:
 * biomaRt
 * psych
 * MUDAN
-
-PLEASE READ THE SOFTWARE LICENSE AGREEMENT CAREFULLY BEFORE USING THE SOFTWARE PACKAGES
-
 
 ```{r include = FALSE}
 setwd('C://Users/lvlah/linux/ac_lab/single-cell-pipeline/')
@@ -78,18 +80,23 @@ We recommend saving intermediate data at each step, since many of these steps wi
 
 ### PreProcessing
 
-First, we perform QC on the data to check the distribution of read depth and genes detected in each sample:
+First, the data is analyzed for quality control. Sequencing depth, number of detected genes, saturation, and mitochondrial gene percentage are assessed here. The mitochondrial gene percentage analysis requires a saved .csv with mitochondrial gene names, which is provided for human genes in PISCES ('mt-geneList.csv'):
 
-```{r, fig.align = 'center', fig.width = 9, fig.height = 5}
-QCPlots(raw.mat)
+```{r, fig.align = 'center', fig.width = 10, fig.height = 10}
+QCPlots(raw.mat, 'mt-geneList.csv')
 ```
 
-In the preprocessing step we remove all the genes with no expression (zero reads across all cells) and low quality cells. Cells  with less than 1000 UMIs or more than 100000 UMIs can be considered low quality cells. These thresholds can be adjusted using the arguments of the QCTransform function based on your data. We also recommened to check the percentage of counts associated with mithocondrial genes on a cell by cell basis as, usually, cells with high level micthocondrial genes are considered low quality/dying cells.
+This data is used to preprocess the data in several ways:
 
-Once the data set is filtered, it is normalized using CPM. A gene expression signature (*rank.mat*) is then generated:
+* Genes with no expression (zero reads across all cells) are removed
+* Cells with less than 1000 UMIs or more than 100000 UMIs can be considered low quality, and are also removed.
+* Additionally, if a population of cells has significantly more mitochondrial genes (generally, more than 10%), these cells can be removed with the *MTFilter* function.
+
+The parameters for both the *QCTransform* and *MTFilter* function should be adjusted for your data. Once the data set is filtered, it is normalized using CPM. Finally, a gene expression signature (*rank.mat*) is then generated:
 
 ```{r}
-filt.mat <- QCTransform(raw.mat)
+mt.mat <- MTFilter(raw.mat, 'mt-geneList.csv')
+filt.mat <- QCTransform(mt.mat)
 cpm.mat <- CPMTransform(filt.mat)
 rank.mat <- RankTransform(cpm.mat)
 ```
@@ -127,8 +134,8 @@ Single-cell ARACNe networks usually contain fewer regulons than those generated 
 
 **NOTE:** for the purposes of this tutorial, this is an optional step (not required). Because this step uses more than 30 networks, it will take a considerable amount of time and memory to run. We recommend running this step on a cluster system with 32GB of memory or more allocated for any data set with 1000 or more cells. Finally, this step is not relevant for murine data, as the GTEx networks are generated from human RNAseq samples.
 
-```{r eval=FALSE, include=FALSE}
-r1.gtex <- GTExVIPER(r1.pAct, 'GTEx-Nets/')
+```{r eval=FALSE}
+r1.gtex <- GTExVIPER(rank.mat, 'GTEx-Nets/')
 r1.pAct <- ViperMerge(r1.pAct, r1.gtex)
 ```
 
@@ -226,3 +233,4 @@ ClusterHeatmap(r2.pAct[ MR_UnWrap(r2.MRs, top = 10) , ], clust = r2.louvain, plo
 Jeremy Dooley - for his advice and expertise in single cell sequencing experiments.  
 Hongxu Ding - whose work in the Califano laid the groundwork for the development of this pipeline.  
 Evan Paull - for help with software and tutorial development and testing.
+

@@ -229,6 +229,6 @@ IterPAM <- function(dat.mat, dist.func, iter.max = 5, sil.thresh = 0.25) {
 #' @return Clustering object.
 LouvainClust <- function(dat.mat) {
   require(MUDAN)
-  res <- MUDAN::getComMembership(t(dat.mat), k = 100, method = igraph::cluster_infomap, verbose = FALSE) 
+  res <- MUDAN::getComMembership(t(dat.mat), k = 300, method = igraph::cluster_infomap, verbose = FALSE) 
   return(res)
 }

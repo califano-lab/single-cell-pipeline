@@ -232,3 +232,33 @@ LouvainClust <- function(dat.mat) {
   res <- MUDAN::getComMembership(t(dat.mat), k = 300, method = igraph::cluster_infomap, verbose = FALSE) 
   return(res)
 }
+
+#' Creates a grid of plots for the given markers that exist in the given matrix.
+#'
+#' @param umap UMAP object generated from the 'UMAP' package
+#' @param cluster Vector of cluster labels for each sample
+#' @param pAct Matrix of protein activity (features X samples).
+#' @param markers List of markers of interest. 
+#' @param plotTitle Title for the plot.
+#' @param ncol Number of columns in the plot. Default of 3.
+#' @return NULL
+MarkerGrid <- function(umap, cluster, pAct, markers, plotTitle, ncol = 3) {
+  require(ggplot2)
+  # create plot data frame
+  plot.dat <- data.frame('UMAP1' = umap$layout[,1], 'UMAP2' = umap$layout[,2],
+                       'clust' = cluster)
+  marker.mat <- t(pAct[ intersect(markers, rownames(pAct)) ,])
+  plot.dat <- cbind(plot.dat, as.data.frame(marker.mat))
+  # create plots
+  clust.plot <- ggplot(plot.dat, aes(x = UMAP1, y = UMAP2, color = clust)) + geom_point() + ggtitle('Clusters')
+  plot.list <- list('Clusters' = clust.plot)
+  for (i in 4:ncol(plot.dat)) { # creat a plot for each marker and add to list
+    m <- colnames(plot.dat)[i]
+    m.plot <- ggplot(plot.dat, aes_string(x = 'UMAP1', y = 'UMAP2', color = m)) + geom_point() + ggtitle(m) + 
+      scale_colour_gradientn(colours = c('blue', 'white', 'red'))
+    plot.list[[m]] <- m.plot
+  }
+  # arrange plots
+  marker.plot <- ggarrange(plotlist = plot.list, ncol = ncol, nrow = ceiling(length(clust.plot) / ncol))
+  print(annotate_figure(marker.plot, top = text_grob(plotTitle, size = 24)))
+}

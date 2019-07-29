@@ -212,6 +212,7 @@ MR_UnWrap <- function(MRs, top) {
 CustomUMAP <- function(dat.mat) {
   require(umap)
   # set UMAP parameters
+  set.seed(1)
   umap_custom <- umap.defaults
   umap_custom$n_neighbors <- 25
   umap_custom$metric <- 'pearson'

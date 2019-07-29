@@ -226,10 +226,12 @@ IterPAM <- function(dat.mat, dist.func, iter.max = 5, sil.thresh = 0.25) {
 #' Louvain clustering using the MUDAN package.
 #' 
 #' @param dat.mat Matrix of data to be clustered (features X samples).
+#' @param k Number of neighbors used in the community detection. Default of 100.
 #' @return Clustering object.
-LouvainClust <- function(dat.mat) {
+LouvainClust <- function(dat.mat, k = 100) {
   require(MUDAN)
-  res <- MUDAN::getComMembership(t(dat.mat), k = 300, method = igraph::cluster_infomap, verbose = FALSE) 
+  set.seed(1)
+  res <- MUDAN::getComMembership(t(dat.mat), k = k, method = igraph::cluster_infomap, verbose = FALSE) 
   return(res)
 }
 

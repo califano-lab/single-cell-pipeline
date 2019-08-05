@@ -1,6 +1,0 @@
-INDEX VERSION 1.130+Y:\Scripts\java\hpARACNe\.metadata\.plugins\org.eclipse.jdt.core
-428372758.index
-327082793.index
-3561890578.index
-3017952843.index
-1059664589.index

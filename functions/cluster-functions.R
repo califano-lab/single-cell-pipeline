@@ -97,6 +97,15 @@ ClusterColors <- function(k, offset = 0) {
   return(hcl(h = hues, l = 65, c = 100)[1:k])
 }
 
+#' Genreates breaks for a color scale based on quantiles.
+#'
+#' @param dat.mat Data matrix (features X samples).
+#' @param n Number of breaks to generate. Default of 10.
+#' @return Numeric vector of break values.
+QuantileBreaks <- function(xs, n = 10) {
+  breaks <- quantile(xs, probs = seq(from = 0, to = 1, length.out = n))
+  return(unique(breaks))
+}
 
 #' Generates a pheatmap from the given data and clustering object.
 #' 
@@ -108,17 +117,21 @@ ClusterColors <- function(k, offset = 0) {
 ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
   require(pheatmap)
   require(RColorBrewer)
+  ## generate sorting, plot data, mat breaks, and annotation color
   sorted.cells <- sort(clust)
   pheatmap.mat <- dat.mat[, names(sorted.cells)]
+  mat.breaks <- QuantileBreaks(pheatmap.mat)
+  annot_color <- ClusterColors(length(unique(clust))); names(annot_color) <- sort(unique(clust))
+  ## save if specified
   if (!missing(plotPath)) {
     jpeg(filename = plotPath) 
   }
-  annot_color <- ClusterColors(length(unique(clust))); names(annot_color) <- sort(unique(clust))
+  ## specify
   pheatmap(pheatmap.mat, annotation_col = data.frame('Cluster' = as.factor(clust)), 
            annotation_colors = list('Cluster' = annot_color),
-           main = plotTitle, width = 6, height = 8, scale = 'row', 
+           main = plotTitle, width = 6, height = 8, scale = 'row', fontsize_row = 4,
            cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = TRUE, show_colnames = FALSE,
-           color = colorRampPalette(colors = c('blue', 'white', 'red'))(100),  fontsize_row = 4)
+           color = colorRampPalette(rev(brewer.pal(25, 'RdBu')))(100), breaks = mat.breaks)
   if (!missing(plotPath)) {
     dev.off()
   }
@@ -242,10 +255,10 @@ LouvainClust <- function(dat.mat, k = 100) {
 #' @param pAct Matrix of protein activity (features X samples).
 #' @param markers List of markers of interest. 
 #' @param plotTitle Title for the plot.
-#' @param ncol Number of columns in the plot. Default of 3.
 #' @return NULL
-MarkerGrid <- function(umap, cluster, pAct, markers, plotTitle, ncol = 3) {
+MarkerGrid <- function(umap, cluster, pAct, markers, plotTitle) {
   require(ggplot2)
+  require(ggpubr)
   # create plot data frame
   plot.dat <- data.frame('UMAP1' = umap$layout[,1], 'UMAP2' = umap$layout[,2],
                        'clust' = cluster)
@@ -260,7 +273,10 @@ MarkerGrid <- function(umap, cluster, pAct, markers, plotTitle, ncol = 3) {
       scale_colour_gradientn(colours = c('blue', 'white', 'red'))
     plot.list[[m]] <- m.plot
   }
+  # determine dimensions
+  nCol <- min(3, length(plot.list))
+  nRow <- ceiling(length(plot.list) / nCol)
   # arrange plots
-  marker.plot <- ggarrange(plotlist = plot.list, ncol = ncol, nrow = ceiling(length(clust.plot) / ncol))
+  marker.plot <- ggarrange(plotlist = plot.list, ncol = nCol, nrow = nRow)
   print(annotate_figure(marker.plot, top = text_grob(plotTitle, size = 24)))
 }

@@ -23,9 +23,7 @@ QCPlots <- function(raw.mat, mt.genes, plot.path) {
     pdf(plot.path)
   }
   ## find mt percentages
-  mt.table <- read.table(mt.genes, sep = ',', header = TRUE, stringsAsFactors = FALSE)
-  mt.ensg <- mt.table$ENSG
-  mt.perc <- MTPercent(raw.mat, mt.ensg)
+  mt.perc <- MTPercent(raw.mat, mt.genes)
   ## generate plots
   nf <- layout(matrix(c(1, 2, 3, 4), nrow = 2), widths = c(4, 4, 4, 4), heights = c(4, 4, 4, 4), TRUE)
   boxplot(colSums(raw.mat), main = "Sequencing depth", frame.plot=F, col="orange")
@@ -59,9 +57,7 @@ MTPercent <- function(dat.mat, mt.genes) {
 #' @param mt.thresh Threshold above which cells will be removed. Default of 0.15
 MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
   ## find mt percentages
-  mt.table <- read.table(mt.genes, sep = ',', header = TRUE, stringsAsFactors = FALSE)
-  mt.ensg <- mt.table$ENSG
-  mt.perc <- MTPercent(raw.mat, mt.ensg)
+  mt.perc <- MTPercent(raw.mat, mt.genes)
   ## filter matrix
   thresh.cells <- names(mt.perc)[which(mt.perc < mt.thresh)]
   print(length(thresh.cells))
@@ -219,4 +215,20 @@ CustomUMAP <- function(dat.mat) {
   # compute umap
   c.umap <- umap(t(dat.mat), config = umap_custom, init = 'random')
   return(c.umap)
+}
+
+#' Read in data in 10x format
+#'
+#' @param dat.path Path to directory containing 'matrix.mtx', 'genes.tsv', and 'barcodes.tsv'.
+#' @return Matrix of raw gene expression (genes X samples).
+read10X <- function(dat.path) {
+  require(Matrix)
+  # read in data
+  raw.mat <- as.matrix(readMM( paste(dat.path, 'matrix.mtx', sep = '') ))
+  genes <- read.table( paste(dat.path, 'genes.tsv', sep = ''), sep = '\t')
+  barcodes <- read.table( paste(dat.path, 'barcodes.tsv', sep = ''), sep = '\t')
+  # set names and return
+  colnames(raw.mat) <- barcodes[,1]
+  rownames(raw.mat) <- genes[,1]
+  return(raw.mat)
 }

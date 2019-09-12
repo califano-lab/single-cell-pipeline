@@ -49,8 +49,11 @@ BTTestMRs <- function(dat.mat, clustering, bootstrapNum = 100) {
   for (i in 1:k) {
     clust <- names(table(clustering))[i]
     clust.vect <- which(clustering == clust)
-    mList <- bootstrapTtest(dat.mat[, clust.vect ], dat.mat[, -clust.vect ], per = bootstrapNum)
-    mrs[[clust]] <- sort(rowMeans(mList), decreasing = TRUE) # return mean p-value for the bootstraps
+    mList <- bootstrapTtest(x = dat.mat[, clust.vect ], y = dat.mat[, -clust.vect ], per = bootstrapNum)
+    mList <- sort(apply(mList, 1, median), decreasing = TRUE)
+    print(head(mList))
+    mrs[[clust]] <- mList # return mean p-value for the bootstraps
+    #mrs[[clust]] <- mList # return mean p-value for the bootstraps
   }
   # return 
   return(mrs)

@@ -34,26 +34,60 @@ AnovaMRs <- function(dat.mat, clustering) {
   return(pVals)
 }
 
+#' Performs a bootstrap t-test between two sample vectors x and y. Returns a log p-value.
+#' 
+#' @param x Vector of test values.
+#' @param y Vector of reference values.
+#' @param bootstrap.num Number of bootstraps to use. Default of 100.
+#' @return A signed log p-value.
+LogBootstrapTTest <- function(x, y, bootstrap.num = 100) {
+  x.n <- length(x); y.n <- length(y)
+  log.pValue <- c()
+  ## perform test for each bootstrap
+  for (i in 1:bootstrap.num) {
+    # create bootstraps
+    x.boot <- sample(1:x.n, size = x.n, replace = TRUE)
+    x.boot <- x[x.boot]
+    y.boot <- sample(1:y.n, size = y.n, replace = TRUE)
+    y.boot <- y[y.boot]
+    # perform t.test
+    test.res <- t.test(x = x.boot, y = y.boot, alternative = "two.sided")
+    # generate log p-value
+    log.p <- 2*pt(q = abs(test.res$statistic), df = floor(test.res$parameter), log.p = TRUE, lower.tail = FALSE)*(-sign(test.res$statistic))
+    log.pValue <- c(log.pValue, log.p)
+  }
+  # return mean log p-value
+  return(mean(log.pValue))
+}
+
 #' Identifies MRs based on a bootstraped Ttest between clusters.
 #'
 #' @param dat.mat Matrix of protein activity (proteins X samples).
 #' @param clustering Vector of cluster labels.
-#' @param bootstrapNum Number of bootstraps to use. Default of 10 
-#' @return Returns a list of lists; each list is a vector of sorted p-values for all proteins in the matrix.
-BTTestMRs <- function(dat.mat, clustering, bootstrapNum = 100) {
+#' @param bootstrap.num Number of bootstraps to use. Default of 10 
+#' @return Returns a list of lists; each list is a vector of sorted log p-values for each cluster.
+BTTestMRs <- function(dat.mat, clustering, bootstrap.num = 100) {
   # set initial variables
   clustering <- clustering
   k <- length(table(clustering))
   mrs <- list()
   # identify MRs for each cluster
   for (i in 1:k) {
+    print(paste('Identifying MRs for cluster ', i, '...', sep = ''))
+    # split test and ref matrices
     clust <- names(table(clustering))[i]
     clust.vect <- which(clustering == clust)
-    mList <- bootstrapTtest(x = dat.mat[, clust.vect ], y = dat.mat[, -clust.vect ], per = bootstrapNum)
-    mList <- sort(apply(mList, 1, median), decreasing = TRUE)
-    print(head(mList))
-    mrs[[clust]] <- mList # return mean p-value for the bootstraps
-    #mrs[[clust]] <- mList # return mean p-value for the bootstraps
+    test.mat <- dat.mat[, clust.vect]; ref.mat <- dat.mat[, -clust.vect]
+    mList <- rep(0, nrow(dat.mat)); names(mList) <- rownames(dat.mat)
+    # test each gene
+    for (j in 1:nrow(dat.mat)) {
+      gene <- rownames(dat.mat)[j]
+      mList[gene] <- LogBootstrapTTest(x = test.mat[gene,], y = ref.mat[gene,], bootstrap.num = bootstrap.num)
+    }
+    # sort and add to list
+    mList <- sort(mList, decreasing = TRUE)
+    #print(head(mList))
+    mrs[[clust]] <- mList
   }
   # return 
   return(mrs)

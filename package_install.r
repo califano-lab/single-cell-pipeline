@@ -12,6 +12,7 @@ install.packages('ggpubr')
 install.packages('RcolorBrewer')
 install.packages('umap')
 install.packages('ggplot2')
+install.packages('optparse')
 
 ## install packages from BioConductor
 BiocManager::install("DropletUtils")

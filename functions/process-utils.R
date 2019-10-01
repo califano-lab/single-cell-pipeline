@@ -22,19 +22,32 @@ QCPlots <- function(raw.mat, mt.genes, plot.path) {
   if (!missing(plot.path)) {
     pdf(plot.path)
   }
-  ## find mt percentages
+  ## sequencing depth plot
+  p1.dat <- data.frame('Depth' = colSums(raw.mat), 'Sample' = as.factor(rep('raw', ncol(raw.mat))))
+  p1 <- ggplot(p1.dat, aes(x=Sample, y=Depth)) + geom_violin(color = '#F8766D', fill = '#F8766D') + 
+    theme_bw()
+  ## detected gene plot
+  p2.dat <- data.frame('dgenes' = colSums(raw.mat > 0), 'Sample' = as.factor(rep('raw', ncol(raw.mat))))
+  p2 <- ggplot(p2.dat, aes(x=Sample, y=dgenes)) + geom_violin(color = '#00BA38', fill = '#00BA38') + 
+    ylab('Datected Genes') + theme_bw()
+  ## mt percentage plot
   mt.perc <- MTPercent(raw.mat, mt.genes)
-  ## generate plots
-  nf <- layout(matrix(c(1, 2, 3, 4), nrow = 2), widths = c(4, 4, 4, 4), heights = c(4, 4, 4, 4), TRUE)
-  boxplot(colSums(raw.mat), main = "Sequencing depth", frame.plot=F, col="orange")
-  boxplot(colSums(raw.mat > 0), main = "Detected genes", frame.plot=F, col="cyan")
-  hist(mt.perc, main = 'Mitochondrial Gene Percentage', xlab = 'MT%')
-  smoothScatter(colSums(raw.mat), colSums(raw.mat > 0), main = "Saturation plot",
-                frame.plot=FALSE, ylab = "Detected genes", xlab = "Sequencing depth", 
-                cex = 2, postPlotHook=NULL)
-  if (!missing(plot.path)) {
-    dev.off()
-  }
+  p3.dat <- data.frame('mt' = mt.perc, 'Sample' = as.factor(rep('raw', length(mt.perc))))
+  p3 <- ggplot(p3.dat, aes(x=Sample, y=mt)) + geom_violin(color = '#619CFF', fill = '#619CFF') +
+    ylab('MT%') + theme_bw()
+  ## arrange and plot
+  ggarrange(plotlist = list(p1, p2, p3), ncol = 3)
+
+  # nf <- layout(matrix(c(1, 2, 3, 4), nrow = 2), widths = c(4, 4, 4, 4), heights = c(4, 4, 4, 4), TRUE)
+  # boxplot(colSums(raw.mat), main = "Sequencing depth", frame.plot=F, col="orange")
+  # boxplot(colSums(raw.mat > 0), main = "Detected genes", frame.plot=F, col="cyan")
+  # hist(mt.perc, main = 'Mitochondrial Gene Percentage', xlab = 'MT%')
+  # smoothScatter(colSums(raw.mat), colSums(raw.mat > 0), main = "Saturation plot",
+  #               frame.plot=FALSE, ylab = "Detected genes", xlab = "Sequencing depth", 
+  #               cex = 2, postPlotHook=NULL)
+  # if (!missing(plot.path)) {
+  #   dev.off()
+  # }
 }
 
 #' Returns vector of mitochondrial percentages for the given samples.

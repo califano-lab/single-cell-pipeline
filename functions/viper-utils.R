@@ -1,16 +1,31 @@
 #' Identifies MRs for given data using stouffer integration.
 #' 
 #' @param dat.mat Matrix of protein activity (proteins X samples).
-#' @param weights If included, will compute MRs using a weighted stouffer integration.
+#' @param cluster Vector of cluster lables. If not included, integrates the entire matrix.
+#' @param weights A named vector of sample weights. If included, stouffer integration is weighted.
 #' @return Returns the stouffer integrated scores for each protien.
-StoufferMRs <- function(dat.mat, weights) {
+StoufferMRs <- function(dat.mat, cluster, weights) {
   # generate dummy weights if missing
   if (missing(weights)) {
-    weights = rep(1, ncol(dat.mat))
+    weights <- as.numeric(rep(1, ncol(dat.mat))); names(weights) <- colnames(dat.mat)
   }
-  # stouffer integrate and return
-  sInt <- rowSums(t(t(dat.mat) * weights)) / sqrt(sum(weights ** 2))
-  return(sInt)
+  # perform integration across full matrix if cluster was missing
+  if (missing(cluster)) {
+    sInt <- rowSums(t(t(dat.mat) * weights))
+    sInt <- rowSums(t(t(dat.mat) * weights)) / sqrt(sum(weights ** 2))
+    return(sInt)
+  }
+  # separate cluster specific matrices
+  k <- length(table(cluster))
+  mrs <- list()
+  for (i in 1:k) { # for each cluster
+    clust.cells <- names(cluster)[which(cluster == i)]
+    clust.mat <- dat.mat[, clust.cells]
+    clust.weights <- weights[clust.cells]
+    clust.mrs <- StoufferMRs(clust.mat, weights = clust.weights)
+    mrs[[paste('c', i, sep = '')]] <- sort(clust.mrs, decreasing = TRUE)
+  }
+  return(mrs)
 }
 
 #' Identifies MRs based on ANOVA analysis for a given clustering.
@@ -60,6 +75,17 @@ LogBootstrapTTest <- function(x, y, bootstrap.num = 100) {
   return(mean(log.pValue))
 }
 
+#' Performs a t-test between two sample vectors x and y. Returns a log p-value.
+#' @param x Vector of test values.
+#' @param y Vector of reference values.
+#' @param bootstrap.num Number of bootstraps to use. Default of 100.
+#' @return A signed log p-value.
+LogTTest <- function(x, y) {
+  test.res <- t.test(x, y, alternative = 'two.sided')
+  log.p <- 2*pt(q = abs(test.res$statistic), df = floor(test.res$parameter), log.p = TRUE, lower.tail = FALSE)*(-sign(test.res$statistic))
+  return(log.p)
+}
+
 #' Identifies MRs based on a bootstraped Ttest between clusters.
 #'
 #' @param dat.mat Matrix of protein activity (proteins X samples).
@@ -74,19 +100,24 @@ BTTestMRs <- function(dat.mat, clustering, bootstrap.num = 100) {
   # identify MRs for each cluster
   for (i in 1:k) {
     print(paste('Identifying MRs for cluster ', i, '...', sep = ''))
+    mrs.mat <- matrix(0L, nrow = nrow(dat.mat), ncol = bootstrap.num)
+    rownames(mrs.mat) <- rownames(dat.mat)
     # split test and ref matrices
     clust <- names(table(clustering))[i]
     clust.vect <- which(clustering == clust)
     test.mat <- dat.mat[, clust.vect]; ref.mat <- dat.mat[, -clust.vect]
-    mList <- rep(0, nrow(dat.mat)); names(mList) <- rownames(dat.mat)
-    # test each gene
-    for (j in 1:nrow(dat.mat)) {
-      gene <- rownames(dat.mat)[j]
-      mList[gene] <- LogBootstrapTTest(x = test.mat[gene,], y = ref.mat[gene,], bootstrap.num = bootstrap.num)
+    t.n <- ncol(test.mat); r.n <- ncol(ref.mat)
+    # for each bootstrap
+    for (b in 1:bootstrap.num) {
+      test.boot <- test.mat[, sample(colnames(test.mat), size = t.n, replace = TRUE)]
+      ref.boot <- ref.mat[, sample(colnames(ref.mat), size = t.n, replace = TRUE)]
+      # for each gene
+      for (g in rownames(dat.mat)) {
+        mrs.mat[g, b] <- LogTTest(test.boot[g,], ref.boot[g,])
+      }
     }
     # sort and add to list
-    mList <- sort(mList, decreasing = TRUE)
-    #print(head(mList))
+    mList <- sort(rowMeans(mrs.mat), decreasing = TRUE)
     mrs[[clust]] <- mList
   }
   # return 
@@ -121,9 +152,11 @@ GetMRs <- function(dat.mat, clustering, method, numMRs = 50, bottom = FALSE, wei
         # get cluster specific matrix and weights
         clust.cells <- names(which(clustering == i))
         clust.mat <- dat.mat[, clust.cells]
+        print(dim(clust.mat))
         clust.weights <- weights[clust.cells]
         # find mrs and add to list
         clust.mrs <- GetMRs(clust.mat, method = method, weights = clust.weights, numMRs = numMRs, bottom = bottom)
+        print(head(clust.mrs))
         mrs[[paste('c', i, sep = '')]] <- clust.mrs
       }
       return(mrs)

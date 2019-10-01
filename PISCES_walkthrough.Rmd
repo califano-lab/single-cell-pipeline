@@ -68,22 +68,19 @@ raw.mat <- readRDS('tutorial/pbmc.rds')
 Alternatively, if the data are in 10x format, you can load the data using the following code (*if the data are already in .rds format, this step does not need to run this for the purposes of the tutorial*):
 
 ```{r eval=FALSE}
-library(Matrix)
-raw.mat <- as.matrix(readMM('data/matrix.mtx'))
-genes <- read.table('data/genes.tsv', sep = '\t')
-barcodes <- read.table('data/barcodes.tsv', sep = '\t')
-colnames(raw.mat) <- barcodes[,1]
-rownames(raw.mat) <- genes[,1]
+raw.mat <- read10X('data-dir')
 ```
 
 We recommend saving intermediate data at each step, since many of these steps will take a considerable amount of time. These saving steps are not including in this tutorial, but can be achieved with the saveRDS function in R.
 
 ### PreProcessing
 
-First, the data is analyzed for quality control. Sequencing depth, number of detected genes, saturation, and mitochondrial gene percentage are assessed here. The mitochondrial gene percentage analysis requires a saved .csv with mitochondrial gene names, which is provided for human genes in PISCES ('mt-geneList.csv'):
+First, the data is analyzed for quality control. Sequencing depth, number of detected genes, and mitochondrial gene percentage are assessed here. The PISCES pipeline provides a table of mitchondrial genes for both human and mouse samples; make sure you select the correct set of mitochondrial genes to filter by (human in the tutorial data):
 
-```{r, fig.align = 'center', fig.width = 10, fig.height = 10}
-QCPlots(raw.mat, 'mt-geneList.csv')
+```{r, fig.align = 'center', fig.width = 10, fig.height = 5}
+mt.genes <- read.table('mt-genes.csv', header = TRUE, sep = ',', stringsAsFactors = FALSE)
+hum.mt <- mt.genes$hum.ensg
+QCPlots(raw.mat, hum.mt)
 ```
 
 This data is used to preprocess the data in several ways:
@@ -95,7 +92,7 @@ This data is used to preprocess the data in several ways:
 The parameters for both the *QCTransform* and *MTFilter* function should be adjusted for your data. Once the data set is filtered, it is normalized using CPM. Finally, a gene expression signature (*rank.mat*) is then generated:
 
 ```{r}
-mt.mat <- MTFilter(raw.mat, 'mt-geneList.csv')
+mt.mat <- MTFilter(raw.mat, hum.mt)
 filt.mat <- QCTransform(mt.mat)
 cpm.mat <- CPMTransform(filt.mat)
 rank.mat <- RankTransform(cpm.mat)

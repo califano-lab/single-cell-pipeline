@@ -113,14 +113,20 @@ QuantileBreaks <- function(xs, n = 10) {
 #' @param clust Vector of cluster labels.
 #' @param plotTitle Title of the plot.
 #' @param plotPath Optional argument for savign the plot, rather than displaying it.
+#' @param quantile If TRUE, colors using quantile breaks; otherwise, uses linear breaks. Default of TRUE.
 #' @return NULL
-ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
+ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath, quantile = TRUE) {
   require(pheatmap)
   require(RColorBrewer)
   ## generate sorting, plot data, mat breaks, and annotation color
   sorted.cells <- sort(clust)
   pheatmap.mat <- dat.mat[, names(sorted.cells)]
-  mat.breaks <- QuantileBreaks(pheatmap.mat)
+  num.breaks <- 100
+  if (quantile) {
+    mat.breaks <- QuantileBreaks(pheatmap.mat, num.breaks)
+  } else {
+    mat.breaks <- seq(min(dat.mat), max(dat.mat), (max(dat.mat) - min(dat.mat)) / num.breaks)
+  }
   annot_color <- ClusterColors(length(unique(clust))); names(annot_color) <- sort(unique(clust))
   ## save if specified
   if (!missing(plotPath)) {
@@ -131,7 +137,7 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath) {
            annotation_colors = list('Cluster' = annot_color),
            main = plotTitle, width = 6, height = 8, scale = 'row', fontsize_row = 4,
            cluster_rows = FALSE, cluster_cols = FALSE, show_rownames = TRUE, show_colnames = FALSE,
-           color = colorRampPalette(rev(brewer.pal(25, 'RdBu')))(100), breaks = mat.breaks)
+           color = colorRampPalette(rev(brewer.pal(11, 'RdBu')))(num.breaks), breaks = mat.breaks)
   if (!missing(plotPath)) {
     dev.off()
   }

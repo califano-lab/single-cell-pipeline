@@ -19,9 +19,9 @@ QCTransform <- function(raw.mat, minCount = 1000, maxCount = 100000, minGeneRead
 #' @param mt.genes Path to .csv file with ENSG and Hugo names for mitochondrial genes.
 #' @param plot.path Optional argumetn of save path for plot.'
 QCPlots <- function(raw.mat, mt.genes, plot.path) {
-  if (!missing(plot.path)) {
-    pdf(plot.path)
-  }
+  # packages
+  require(ggplot2)
+  require(ggpubr)
   ## sequencing depth plot
   p1.dat <- data.frame('Depth' = colSums(raw.mat), 'Sample' = as.factor(rep('raw', ncol(raw.mat))))
   p1 <- ggplot(p1.dat, aes(x=Sample, y=Depth)) + geom_violin(color = '#F8766D', fill = '#F8766D') + 
@@ -36,18 +36,11 @@ QCPlots <- function(raw.mat, mt.genes, plot.path) {
   p3 <- ggplot(p3.dat, aes(x=Sample, y=mt)) + geom_violin(color = '#619CFF', fill = '#619CFF') +
     ylab('MT%') + theme_bw()
   ## arrange and plot
-  ggarrange(plotlist = list(p1, p2, p3), ncol = 3)
-
-  # nf <- layout(matrix(c(1, 2, 3, 4), nrow = 2), widths = c(4, 4, 4, 4), heights = c(4, 4, 4, 4), TRUE)
-  # boxplot(colSums(raw.mat), main = "Sequencing depth", frame.plot=F, col="orange")
-  # boxplot(colSums(raw.mat > 0), main = "Detected genes", frame.plot=F, col="cyan")
-  # hist(mt.perc, main = 'Mitochondrial Gene Percentage', xlab = 'MT%')
-  # smoothScatter(colSums(raw.mat), colSums(raw.mat > 0), main = "Saturation plot",
-  #               frame.plot=FALSE, ylab = "Detected genes", xlab = "Sequencing depth", 
-  #               cex = 2, postPlotHook=NULL)
-  # if (!missing(plot.path)) {
-  #   dev.off()
-  # }
+  if (!missing(plot.path)) {
+    ggarrange(plotlist = list(p1, p2, p3), ncol = 3) %>% ggexport(filename = plot.path, height = 700, width = 1000)
+  } else {
+    ggarrange(plotlist = list(p1, p2, p3), ncol = 3)
+  }
 }
 
 #' Returns vector of mitochondrial percentages for the given samples.
@@ -73,7 +66,8 @@ MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
   mt.perc <- MTPercent(raw.mat, mt.genes)
   ## filter matrix
   thresh.cells <- names(mt.perc)[which(mt.perc < mt.thresh)]
-  print(length(thresh.cells))
+  rem.cells <- ncol(dat.mat) - length(thresh.cells)
+  print(paste('Removed', rem.cells, 'cells with too many MT reads', sep = ' '))
   dat.mat <- dat.mat[, thresh.cells ]
   return(dat.mat)
 }

@@ -129,7 +129,9 @@ r1.pAct <- viper(rank.mat, r1.net, method = 'none')
 
 Single-cell ARACNe networks usually contain fewer regulons than those generated from bulk data due to data sparsity that characterize single cell gene expresion data. However, it is possible to combine single-cell networks with precomputed GTEx bulk networks using the metVIPER algorithm. Briefly, MetaVIPER will identify the GTEX networks that have the best macth with the single cell data, then will use these networks to compute the protein activity only for the proteins whose regulon was not inferred from single cell gene expression profiles (*r1.pAct* object). 
 
-**NOTE:** for the purposes of this tutorial, this is an optional step (not required). Because this step uses more than 30 networks, it will take a considerable amount of time and memory to run. We recommend running this step on a cluster system with 32GB of memory or more allocated for any data set with 1000 or more cells. Finally, this step is not relevant for murine data, as the GTEx networks are generated from human RNAseq samples.
+**NOTE:** for the purposes of this tutorial, this is an optional step (not required). Because this step uses more than 30 networks, it will take a considerable amount of time and memory to run. We recommend running this step on a cluster system with 32GB of memory or more allocated for any data set with 1000 or more cells. Pre-made GTEx networks can be found in this github repository: https://github.com/califano-lab/GTEx-Networks
+
+Finally, this step is not relevant for murine data, as the GTEx networks are generated from human RNAseq samples.
 
 ```{r eval=FALSE}
 r1.gtex <- GTExVIPER(rank.mat, 'GTEx-Nets/')

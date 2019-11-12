@@ -63,7 +63,7 @@ MTPercent <- function(dat.mat, mt.genes) {
 #' @param mt.thresh Threshold above which cells will be removed. Default of 0.15
 MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
   ## find mt percentages
-  mt.perc <- MTPercent(raw.mat, mt.genes)
+  mt.perc <- MTPercent(dat.mat, mt.genes)
   ## filter matrix
   thresh.cells <- names(mt.perc)[which(mt.perc < mt.thresh)]
   rem.cells <- ncol(dat.mat) - length(thresh.cells)

@@ -4,18 +4,55 @@
 #' @param kmin The minimum k to be used (default of 2).
 #' @param kmax The maximum k to be used (default of 5).
 #' @param verbose Switch to print status updates
-#' @return A list of clustering objects for each value of k.
+#' @return A list of two lists; 'clusterings', which contains the cluster labels and 'sils', which has silhouette scores
 PamKRange <- function(dist.mat, kmin = 2, kmax = 5, verbose = TRUE) {
   ## packages
   require('cluster')  
   ## generate clusterings for each k
   clusterings <- list()
+  sils <- list()
   for (k in kmin:kmax) {
     if (verbose) { print(paste('Clustering with k=', k, '...', sep = ''))}
-    clustering <- pam(dist.mat, k)
-    clusterings[[paste('k', k, sep='')]] <- clustering
+    # cluster
+    pclust <- pam(dist.mat, k, diss = TRUE)
+    clusterings[[paste('k', k, sep='')]] <- pclust
+    # evaluate
+    sil.score <- silhouette(pclust, dist.mat)
+    sils[[paste('k', k, sep = '')]] <- mean(sil.score[,3])
   }
-  return(clusterings)
+  return(list('clusterings' = clusterings, 'sils' = sils))
+}
+
+#' Louvain clustering over a range of resolution parameters (uses getComMembership from the MUDAN package)
+#'
+#' @param dat.mat Matrix of data (features X samples)
+#' @param dist.mat Distance matrix
+#' @param rmin Lowest resolution to try. Default of 10.
+#' @param rmax Maximum resolution to try. Default of 100.
+#' @param rstep Step size for resolution parameter. Default of 10.
+#' @param verbose Switch to control terminal read out of progress. Default of TRUE.
+#' @return A list of two lists; 'clusterings', which contains the cluster labels and 'sils', which has silhouette scores
+LouvainResRange <- function(dat.mat, dist.mat, rmin = 10, rmax = 100, rstep = 10, verbose = TRUE) {
+  # packages
+  require(MUDAN)
+  require(cluster)
+  set.seed(1)
+  # iterate through resolution params
+  res <- rmin
+  clusterings <- list()
+  sils <- list()
+  while (res <= rmax) {
+    if (verbose) {print(paste('Clustering with res=', res, '...', sep = ''))}
+    # cluster
+    lclust <- getComMembership(t(dat.mat), k = res, method = igraph::cluster_walktrap, verbose = FALSE)
+    clusterings[[paste('res', res, sep = '')]] <- lclust
+    # evaluate
+    sil.score <- silhouette(as.integer(lclust), dist.mat)
+    sils[[paste('res', res, sep = '')]] <- mean(sil.score[,3])
+    # iterate resolution param
+    res <- res + rstep
+  }
+  return(list('clusterings' = clusterings, 'sils' = sils))
 }
 
 #' Generation of silhouette score for a list of clusters.
@@ -53,7 +90,7 @@ SilScoreEval <- function(clusterings, dist.mat, plotPath) {
 #' Generates cluster-specific matrices for given data based on a clustering object.
 #' 
 #' @param dat.mat Data matrix to be split (features X samples).
-#' @param clust Clustering object.
+#' @param clust Clustering vector
 #' @param savePath If specified, matrices will be saved. Otherwise, a list of matrices will be returned.
 #' @param savePref Preface for file names, if saving.
 #' @param sizeThresh Smallest size cluster for which a matrix will be created. Default 300.
@@ -68,10 +105,10 @@ ClusterMatrices <- function(dat.mat, clust, savePath, savePref, sizeThresh = 300
     clust.mats <- list()
   }
   ## generate matrices
-  clust.table <- table(clust$clustering)
+  clust.table <- table(clust)
   for (i in 1:length(clust.table)) {
     if (clust.table[i] > sizeThresh) {
-      clust.cells <- names(which(clust$clustering == names(clust.table)[i]))
+      clust.cells <- names(which(clust == names(clust.table)[i]))
       clust.mat <- dat.mat[, clust.cells]
       clust.mat <- clust.mat[ rowSums(clust.mat) >= 1 ,]
       if (missing(savePath)) {
@@ -151,10 +188,12 @@ ClusterHeatmap <- function(dat.mat, clust, plotTitle, plotPath, quantile = TRUE)
 #' @return NULL
 ClusterScatter <- function(umap.obj, clust, plotTitle) {
   require(ggplot2)
-  plot.dat <- data.frame('UMAP1' = umap.obj$layout[,1], 'UMAP2' = umap.obj$layout[,2], 'Clusters' = clust)
-  ggplot(plot.dat, aes(UMAP1, UMAP2)) + geom_point(aes(color = Clusters), alpha=0.5, size = 2) +
+  plot.dat <- data.frame('UMAP1' = umap.obj$layout[,1], 'UMAP2' = umap.obj$layout[,2], 'Clusters' = as.factor(clust))
+  scatter.cols <- unlist(ClusterColors(length(unique(clust))))
+  names(scatter.cols) <- sort(unique(clust))
+  ggplot(plot.dat, aes(x = UMAP1, y = UMAP2, color = Clusters)) + geom_point(alpha=0.5, size = 2) +
     theme_bw() + theme(legend.justification = c("right", "top")) + ggtitle(plotTitle) +
-    scale_color_manual(values = ClusterColors(length(unique(clust))))
+    scale_color_manual(values = scatter.cols)
 }
 
 #' Iterative clustering using PAM

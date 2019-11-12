@@ -188,28 +188,35 @@ CBCMRs <- function(dat.mat, numMRs = 25) {
 
 #' Make Cluster Metacells for ARACNe. Will take a clustering and produce saved meta cell matrices.
 #'
-#' @param dat.mat Matrix of raw gene expression (genes X samples).
+#' @param dat.mat Matrix of filtered, un-normalzied gene expression (genes X samples).
 #' @param dist.mat Distance matrix to be used for neighbor calculation. We recommend using a viper similarity matrix.
-#' @param numNeighbors Number of neighbors to use for each meta cell. Default of 5.
+#' @param numNeighbors Number of neighbors to use for each meta cell; if 0, meta cellsare not computed.. Default of 5.
 #' @param clustering Vector of cluster labels. 
 #' @param subSize Size to subset the data too. Since 200 cells is adequate for ARACNe runs, this allows for speedup. Default of 200.
+#' @param pseudo If TRUE, uses a pseudo count for normalization. Default of FALSE.
 #' @param out.dir Directory for sub matrices to be saved in.
 #' @param out.name Optional argument for preface of file names. 
-MakeCMfA <- function(dat.mat, dist.mat, numNeighbors = 5, clustering, subSize = 200, out.dir, out.name = '') {
+MakeSubMats <- function(dat.mat, dist.mat, numNeighbors = 0, clustering, subSize = 200, pseudo = FALSE, out.dir, out.name = '') {
   # generate cluster matrices
   clust.mats <- ClusterMatrices(dat.mat, clustering)
-  # produce metaCell matrix and save for each cluster matrix
+  # produce sub matrices and save for each cluster matrix
   k <- length(clust.mats)
-  meta.mats <- list()
-  for (i in 1:k) {
+  sub.mats <- list()
+  for (i in 1:k) { # for each cluster
     mat <- clust.mats[[i]]
-    meta.mat <- MetaCells(mat, dist.mat, numNeighbors, subSize)
-    meta.mat <- CPMTransform(meta.mat)
-    file.name <- paste(out.dir, out.name, '_clust-', i, '-metaCells.tsv', sep = '')
-    ARACNeTable(meta.mat, file.name, subset = FALSE)
-    meta.mats[[i]] <- meta.mat
+    if (numNeighbors > 0) { # metacells if specified
+      mat <- MetaCells(mat, dist.mat, numNeighbors, subSize)
+    } else {
+      mat <- mat[, sample(colnames(mat), subSize)]
+    }
+    # cpm transformation
+    mat <- CPMTransform(mat, pseudo = pseudo)
+    sub.mats[[i]] <- mat
+    # save file
+    file.name <- paste(out.dir, out.name, '_clust-', i, '.rds', sep = '')
+    saveRDS(mat, file = file.name)
   }
-  return(meta.mats)
+  return(sub.mats)
 }
 
 #' Generates a meta cell matrix for given data.

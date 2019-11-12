@@ -9,7 +9,7 @@ QCTransform <- function(raw.mat, minCount = 1000, maxCount = 100000, minGeneRead
   filt.mat <- raw.mat[, colSums(raw.mat) > minCount & colSums(raw.mat) < maxCount]
   filt.mat <- filt.mat[ rowSums(raw.mat) >= minGeneReads ,]
   rem.genes <- nrow(raw.mat) - nrow(filt.mat); rem.cells <- ncol(raw.mat) - ncol(filt.mat)
-  print(paste('Removed ', rem.genes, ' genes and ', rem.cells, ' cells.', sep =''))
+  print(paste('Removed ', rem.genes, ' gene(s) and ', rem.cells, ' cell(s).', sep =''))
   return(filt.mat)
 }
 
@@ -67,7 +67,7 @@ MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
   ## filter matrix
   thresh.cells <- names(mt.perc)[which(mt.perc < mt.thresh)]
   rem.cells <- ncol(dat.mat) - length(thresh.cells)
-  print(paste('Removed', rem.cells, 'cells with too many MT reads', sep = ' '))
+  print(paste('Removed', rem.cells, 'cell(s) with too many MT reads', sep = ' '))
   dat.mat <- dat.mat[, thresh.cells ]
   return(dat.mat)
 }
@@ -76,8 +76,12 @@ MTFilter <- function(dat.mat, mt.genes, mt.thresh = 0.1) {
 #' 
 #' @param dat.mat Matrix of gene expression data (genes X samples).
 #' @param l2 Optional log2 normalization switch. Default of False.
+#' @param pseudo Optional pseudo count logical. Default of False.
 #' @return Returns CPM normalized matrix
-CPMTransform <- function(dat.mat, l2 = FALSE) {
+CPMTransform <- function(dat.mat, l2 = FALSE, pseudo = FALSE) {
+  if (pseudo) {
+    dat.mat <- dat.mat + 1
+  }
   cpm.mat <- t(t(dat.mat) / (colSums(dat.mat) / 1e6))
   if (l2) {
     cpm.mat <- log2(cpm.mat + 1)
@@ -95,6 +99,22 @@ RankTransform <- function(dat.mat) {
   mad <- apply(rank.mat, 1, mad)
   rank.mat <- (rank.mat - median) / mad
   return(rank.mat)
+}
+
+#' Generates a non-parametric gene expression signature.
+#'
+#' @param raw.mat Matrix of raw data (genes X samples).
+#' @return A gene expression signature matrix of the same dimensions as raw.mat
+NpGES <- function(raw.mat) {
+  ## pseudocount; cpm; subtract medians
+  ges.mat <- raw.mat + 1
+  ges.mat <- t(t(ges.mat) / (colSums(ges.mat) / 1e6))
+  ges.mat <- sweep(ges.mat, 1, rowMedians(ges.mat))
+  ## rank sign transformation
+  for (i in 1:nrow(ges.mat)) {
+    ges.mat[i,] <- rank(abs(ges.mat[i,]), ties.method = 'random') * sign(ges.mat[i,])
+  }
+  return(ges.mat)
 }
 
 #' Transforms gene names from Ensembl to hgnc.

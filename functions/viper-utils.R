@@ -322,10 +322,10 @@ VIPIntegrate <- function(vip.mats, weights) {
 #' 
 #' @param ges Gene Expression Signature (features X samples)
 #' @param net.list List object with the networks to be used
-#' @param num.nets Optional argument to sslect the top n networks. If not specified, all networks are used.  
+#' @param use.nets Optional argument to sslect the top n networks. If not specified, all networks are used.  
 #' @param ret.weights Optional argument to return the network weight matrix as well as the VIPER matrix. FALSE by default.
 #' @return Either a viper matrix, or a list with a viper matrix and the network weight matrix.
-WeightedVIPER <- function(ges, net.list, num.nets, ret.weights = FALSE) {
+WeightedVIPER <- function(ges, net.list, use.nets, ret.weights = FALSE) {
   num.nets <- length(net.list)
   num.samps <- ncol(ges)
   ## create weight matrix
@@ -368,11 +368,11 @@ WeightedVIPER <- function(ges, net.list, num.nets, ret.weights = FALSE) {
       w.vals <- w.mat[,s][!is.na(nes.vals)]
       w.vals <- w.vals / sum(w.vals)
       nes.vals <- nes.vals[!is.na(nes.vals)]
-      # if num.nets are specified, subset to the top n (or use all if n > length)
-      if (!missing(num.nets)) {
+      # if use.nets are specified, subset to the top n (or use all if n > length)
+      if (!missing(use.nets)) {
         w.order <- order(w.vals, decreasing = TRUE)
-        w.vals <- w.vals[ w.order[1:min(length(w.order), num.nets)] ]
-        nes.vals <- nes.vals[ w.order[1:min(length(nes.vals), num.nets)] ]
+        w.vals <- w.vals[ w.order[1:min(length(w.order), use.nets)] ]
+        nes.vals <- nes.vals[ w.order[1:min(length(nes.vals), use.nets)] ]
       }
       int.mat[g,s] <- sum(nes.vals * w.vals) / sqrt(sum(w.vals**2))
     }

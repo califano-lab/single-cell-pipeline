@@ -13,7 +13,7 @@ StoufferMRs <- function(dat.mat, cluster, weights) {
   if (missing(cluster)) {
     sInt <- rowSums(t(t(dat.mat) * weights))
     sInt <- rowSums(t(t(dat.mat) * weights)) / sqrt(sum(weights ** 2))
-    return(sInt)
+    return(sort(sInt, decreasing = TRUE))
   }
   # separate cluster specific matrices
   k <- length(table(cluster))

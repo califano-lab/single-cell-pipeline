@@ -225,8 +225,9 @@ MakeSubMats <- function(dat.mat, dist.mat, numNeighbors = 0, clustering, subSize
 #' @param dist.mat Distance matrix to be used for neighbor inference.
 #' @param numNeighbors Number of neighbors to use for each meta cell. Default of 10.
 #' @param subSize If specified, number of metaCells to be subset from the final matrix. No subsetting occurs if not incldued.
+#' @param cpm Switch to control transformation to cpm. Default TRUE.
 #' @return A matrix of meta cells (genes X samples).
-MetaCells <- function(dat.mat, dist.mat, numNeighbors = 10, subSize) {
+MetaCells <- function(dat.mat, dist.mat, numNeighbors = 10, subSize, cpm = TRUE) {
   # prune distance matrix if necessary
   dist.mat <- as.matrix(dist.mat)
   dist.mat <- dist.mat[colnames(dat.mat), colnames(dat.mat)]
@@ -249,14 +250,17 @@ MetaCells <- function(dat.mat, dist.mat, numNeighbors = 10, subSize) {
     neighbor.mat <- dat.mat[,c(i, knn.neighbors[i,])]
     imp.mat[,i] <- rowSums(neighbor.mat)
   }
-  # subset if requested and return
-  if (missing(subSize)) {
-    return(imp.mat)
-  } else if (subSize > ncol(imp.mat)) {
-    return(imp.mat)
-  } else {
-    return(imp.mat[, sample(colnames(imp.mat), subSize) ])
+  # subset if specified
+  if (!missing(subSize)) {
+    s.size <- min(subSize, ncol(imp.mat))
+    imp.mat <- imp.mat[, sample(colnames(imp.mat, s.size)) ]
   }
+  # cpm if specified
+  if (cpm) {
+    imp.mat <- CPMTransform(imp.mat)
+  }
+  # return
+  return(imp.mat)
 }
 
 #' Merges two viper matrices, giving priority to one over the other.
